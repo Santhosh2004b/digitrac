@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  # Redis cache and distributed messaging broker (Objective 3)
+  redis:
+    image: redis:7.0-alpine
+    container_name: digitrac_redis
+    ports:
+      - "6379:6379"
+    restart: always
+
+  # FastAPI platform engine backend
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: digitrac_backend
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=sqlite:///./digitrac.db
+      - SECRET_KEY=digitrac_super_secret_corporate_token
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+    restart: always
+
+  # Distributed Celery Worker (Objective 3)
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: digitrac_celery_worker
+    command: celery -A app.services.distributed_workers worker --loglevel=info
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=sqlite:///./digitrac.db
+    depends_on:
+      - redis
+    restart: always
+
+  # Next.js corporate frontend app
+  frontend:
+    image: node:18-alpine
+    container_name: digitrac_frontend
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+    command: npm run dev
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    restart: always
