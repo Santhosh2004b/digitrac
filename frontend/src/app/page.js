@@ -186,13 +186,13 @@ export default function LoginPage() {
             <button 
               type="button"
               onClick={() => { setAuthTab('EXISTING'); setIsSetupMode(false); setError(''); }}
-              style={{ flex: 1, padding: '0.75rem', background: authTab === 'EXISTING' ? 'rgba(59, 130, 246, 0.2)' : 'transparent', border: authTab === 'EXISTING' ? '1px solid #3b82f6' : 'none', color: authTab === 'EXISTING' ? '#fff' : '#8896ab', borderRadius: '0.5rem', fontSize: '0.7rem', fontWeight: 900, cursor: 'pointer', transition: 'all 0.2s' }}>
+              style={{ flex: 1, padding: '0.75rem', background: authTab === 'EXISTING' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(0,0,0,0)', border: authTab === 'EXISTING' ? '1px solid #3b82f6' : 'none', color: authTab === 'EXISTING' ? '#fff' : '#8896ab', borderRadius: '0.5rem', fontSize: '0.7rem', fontWeight: 900, cursor: 'pointer', transition: 'all 0.2s' }}>
               EXISTING MEMBER
             </button>
             <button 
               type="button"
               onClick={() => { setAuthTab('NEW'); setIsSetupMode(false); setError(''); }}
-              style={{ flex: 1, padding: '0.75rem', background: authTab === 'NEW' ? 'rgba(0, 255, 200, 0.2)' : 'transparent', border: authTab === 'NEW' ? '1px solid #00ffc8' : 'none', color: authTab === 'NEW' ? '#fff' : '#8896ab', borderRadius: '0.5rem', fontSize: '0.7rem', fontWeight: 900, cursor: 'pointer', transition: 'all 0.2s' }}>
+              style={{ flex: 1, padding: '0.75rem', background: authTab === 'NEW' ? 'rgba(0, 255, 200, 0.2)' : 'rgba(0,0,0,0)', border: authTab === 'NEW' ? '1px solid #00ffc8' : 'none', color: authTab === 'NEW' ? '#fff' : '#8896ab', borderRadius: '0.5rem', fontSize: '0.7rem', fontWeight: 900, cursor: 'pointer', transition: 'all 0.2s' }}>
               NEW USER
             </button>
           </div>

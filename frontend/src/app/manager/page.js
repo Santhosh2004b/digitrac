@@ -242,10 +242,10 @@ export default function ManagerDashboard() {
         </div>
 
         <div style={{ fontSize:'0.55rem', color:'rgba(136,150,171,0.5)', fontWeight:800, letterSpacing:'0.15em', padding:'0 0.75rem', marginBottom:'0.5rem' }}>CORE</div>
-        <div onClick={() => setActiveTab('DASHBOARD')} style={{ display:'flex', alignItems:'center', gap:'0.75rem', padding:'0.7rem 0.75rem', borderRadius:'8px', fontSize:'0.72rem', fontWeight:700, marginBottom:'2px', background: activeTab === 'DASHBOARD' ? 'rgba(0,255,200,0.06)' : 'transparent', color: activeTab === 'DASHBOARD' ? '#00ffd1' : '#8896ab', cursor: 'pointer' }}>
+        <div onClick={() => setActiveTab('DASHBOARD')} style={{ display:'flex', alignItems:'center', gap:'0.75rem', padding:'0.7rem 0.75rem', borderRadius:'8px', fontSize:'0.72rem', fontWeight:700, marginBottom:'2px', background: activeTab === 'DASHBOARD' ? 'rgba(0,255,200,0.06)' : 'rgba(0,0,0,0)', color: activeTab === 'DASHBOARD' ? '#00ffd1' : '#8896ab', cursor: 'pointer' }}>
           <Icons.Grid /><span>Dashboard</span>
         </div>
-        <div onClick={() => setActiveTab('RIDE')} style={{ display:'flex', alignItems:'center', gap:'0.75rem', padding:'0.7rem 0.75rem', borderRadius:'8px', fontSize:'0.72rem', fontWeight:700, marginBottom:'2px', background: activeTab === 'RIDE' ? 'rgba(0,255,200,0.06)' : 'transparent', color: activeTab === 'RIDE' ? '#00ffd1' : '#8896ab', cursor: 'pointer' }}>
+        <div onClick={() => setActiveTab('RIDE')} style={{ display:'flex', alignItems:'center', gap:'0.75rem', padding:'0.7rem 0.75rem', borderRadius:'8px', fontSize:'0.72rem', fontWeight:700, marginBottom:'2px', background: activeTab === 'RIDE' ? 'rgba(0,255,200,0.06)' : 'rgba(0,0,0,0)', color: activeTab === 'RIDE' ? '#00ffd1' : '#8896ab', cursor: 'pointer' }}>
           <Icons.Shield /><span>RIDE Governance</span>
         </div>
 

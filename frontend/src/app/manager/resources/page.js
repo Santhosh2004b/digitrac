@@ -171,7 +171,7 @@ export default function ResourceHub() {
         </div>
         <div style={{ fontSize: '0.55rem', color: 'rgba(136,150,171,0.5)', fontWeight: 800, letterSpacing: '0.15em', padding: '1rem 0.75rem 0.5rem' }}>OPERATIONS</div>
         {[{ label: 'Resources', icon: <Icons.Users />, path: '/manager/resources', id: 'RES' }, { label: 'Time Logs', icon: <Icons.Clock />, path: '/manager/logs', id: 'LOGS' }].map(item => (
-          <div key={item.id} onClick={() => navTo(item.path)} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 0.75rem', borderRadius: '8px', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 700, marginBottom: '2px', transition: 'all 0.2s', background: item.id === 'RES' ? 'rgba(0,255,200,0.06)' : 'transparent', color: item.id === 'RES' ? '#00ffd1' : '#8896ab', borderLeft: item.id === 'RES' ? '2px solid #00ffd1' : '2px solid transparent' }}>
+          <div key={item.id} onClick={() => navTo(item.path)} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 0.75rem', borderRadius: '8px', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 700, marginBottom: '2px', transition: 'all 0.2s', background: item.id === 'RES' ? 'rgba(0,255,200,0.06)' : 'rgba(0,0,0,0)', color: item.id === 'RES' ? '#00ffd1' : '#8896ab', borderLeft: item.id === 'RES' ? '2px solid #00ffd1' : '2px solid transparent' }}>
             {item.icon}<span>{item.label}</span>
           </div>
         ))}
@@ -247,7 +247,7 @@ export default function ResourceHub() {
                   </td></tr>
                 ) : filtered.map((r, idx) => (
                   <tr key={idx} onClick={() => setSelected(r === selected ? null : r)}
-                    style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', cursor: 'pointer', background: selected?.id === r.id ? 'rgba(0,242,255,0.04)' : 'transparent', transition: 'background 0.2s' }}>
+                    style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', cursor: 'pointer', background: selected?.id === r.id ? 'rgba(0,242,255,0.04)' : 'rgba(0,0,0,0)', transition: 'background 0.2s' }}>
                     <td style={{ padding: '0.85rem 1rem' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                         <div style={{ width: 32, height: 32, borderRadius: '8px', background: `linear-gradient(135deg, #6C63FF, #3b82f6)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 950 }}>

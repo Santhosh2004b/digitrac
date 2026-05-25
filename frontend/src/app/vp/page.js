@@ -551,7 +551,7 @@ export default function VPDashboard() {
                              {notifications.length === 0 ? (
                                 <div style={{ fontSize: '0.65rem', color: '#8896ab', textAlign: 'center', padding: '1rem' }}>No open delivery warnings.</div>
                              ) : notifications.map((n, i) => (
-                                <div key={i} style={{ background: n.is_read ? 'transparent' : 'rgba(255,255,255,0.02)', padding: '0.5rem', borderRadius: '6px', borderLeft: `3px solid ${n.priority === 'CRITICAL' ? '#ef4444' : n.priority === 'WARNING' ? '#f59e0b' : '#3b82f6'}` }}>
+                                <div key={i} style={{ background: n.is_read ? 'rgba(0,0,0,0)' : 'rgba(255,255,255,0.02)', padding: '0.5rem', borderRadius: '6px', borderLeft: `3px solid ${n.priority === 'CRITICAL' ? '#ef4444' : n.priority === 'WARNING' ? '#f59e0b' : '#3b82f6'}` }}>
                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.6rem', fontWeight: 800 }}>
                                       <span style={{ color: n.priority === 'CRITICAL' ? '#ef4444' : '#fff' }}>{n.title}</span>
                                       <span style={{ opacity: 0.6 }}>{n.priority}</span>
