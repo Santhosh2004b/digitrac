@@ -20,7 +20,13 @@ class DemoSandboxSeeder:
         """
         logger.info("Initiating platform-wide demo reset and sandbox seeding...")
 
-        # 1. Clear existing tables
+        # 1. Clear existing tables (including dependent tables)
+        from sqlalchemy import text
+        db.execute(text("DELETE FROM timelogs"))
+        db.execute(text("DELETE FROM tasks"))
+        db.execute(text("DELETE FROM project_resources"))
+        db.execute(text("DELETE FROM project_items"))
+        db.execute(text("DELETE FROM mission_assignments"))
         db.query(WorkflowStep).delete()
         db.query(WorkflowInstance).delete()
         db.query(ProjectMilestone).delete()
@@ -73,9 +79,10 @@ class DemoSandboxSeeder:
         res1 = CentralizedResource(
             employee_id="EMP-701",
             name="Ananya Sharma",
+            email="ananya.sharma@arche.global",
             grade="E3",
-            role="Cloud Practice Lead",
-            billing_rate=120.0,
+            role_practice="Cloud Practice Lead",
+            hourly_billing_rate=120.0,
             cost_rate=75.0,
             skill_category="Cloud Architecture",
             status="Allocated",
@@ -85,9 +92,10 @@ class DemoSandboxSeeder:
         res2 = CentralizedResource(
             employee_id="EMP-702",
             name="Marcus Vance",
+            email="marcus.vance@arche.global",
             grade="E2",
-            role="Security Consultant",
-            billing_rate=95.0,
+            role_practice="Security Consultant",
+            hourly_billing_rate=95.0,
             cost_rate=55.0,
             skill_category="Cybersecurity",
             status="Allocated",
@@ -97,9 +105,10 @@ class DemoSandboxSeeder:
         res3 = CentralizedResource(
             employee_id="EMP-703",
             name="Samantha Lee",
+            email="samantha.lee@arche.global",
             grade="E1",
-            role="Software Engineer",
-            billing_rate=0.0, # Simulation unbillable leakage (Objective 1)
+            role_practice="Software Engineer",
+            hourly_billing_rate=0.0, # Simulation unbillable leakage (Objective 1)
             cost_rate=45.0,
             skill_category="Digital Engineering",
             status="Bench",
@@ -111,41 +120,45 @@ class DemoSandboxSeeder:
         db.add(res3)
 
         # 5. Seed Sandbox Projects
+        ap1 = ApprovedProject(
+            project_name="Acme Cloud Infrastructure Migration",
+            assigned_manager_email="manager@arche.global",
+            approved_by="vp@arche.global",
+            full_excel_data={"budget": 500000, "margin": 45}
+        )
+        db.add(ap1)
+        db.flush()
+        
         p1 = Project(
             name="Acme Cloud Infrastructure Migration",
-            po_reference="PO-88291",
-            approved_budget=500000.0,
-            actual_cost=250000.0,
-            forecasted_cost=450000.0,
-            planned_revenue=800000.0,
-            actual_revenue=400000.0,
-            gross_margin=350000.0,
-            gm_percent=43.75,
-            burn_rate=12500.0,
-            margin_variance=15000.0,
-            leakage_detected=True,
-            status="Active"
+            status="ACTIVE",
+            sale_value=800000.0,
+            total_cost_baseline=450000.0,
+            margin_pct_baseline=43.75,
+            net_margin_baseline=350000.0
         )
         db.add(p1)
         db.flush()
 
         # Seed Project baseline targets for variance alerting
         base1 = ProjectBaseline(
-            project_id=p1.id,
-            target_budget=500000.0,
-            target_margin_pct=45.0,
-            expected_completion_date=datetime.utcnow() + timedelta(days=90)
+            project_id=ap1.id,
+            approved_budget=500000.0,
+            approved_margin_threshold=45.0,
+            approved_by="vp@arche.global"
         )
         db.add(base1)
 
         # Seed RIDE Governance logs
         ride1 = RIDEGovernance(
-            project_id=p1.id,
+            project_id=ap1.id,
             type="RISK",
             severity="HIGH",
             priority="CRITICAL",
+            title="Acme S3 database encryption configuration delay.",
             description="Acme S3 database encryption configuration delay.",
-            owner="marcus@arche.global",
+            owner_name="Marcus Vance",
+            owner_email="marcus@arche.global",
             due_date=datetime.utcnow() + timedelta(days=5),
             status="OPEN"
         )
@@ -184,8 +197,9 @@ class DemoSandboxSeeder:
         db.flush()
 
         step1 = WorkflowStep(
-            instance_id=wf1.id,
+            workflow_instance_id=wf1.id,
             level=1,
+            approver_role="VP",
             approver_email="vp@arche.global",
             status="PENDING"
         )
