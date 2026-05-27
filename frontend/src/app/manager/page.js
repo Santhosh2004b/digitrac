@@ -230,13 +230,13 @@ export default function ManagerDashboard() {
       {/* Sidebar */}
       <aside style={{ width:240, background:'#05070f', borderRight:'1px solid rgba(0,255,200,0.08)', display:'flex', flexDirection:'column', padding:'1.5rem 0.75rem', flexShrink:0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0 0.5rem', marginBottom: '2rem' }}>
-          <div style={{ width: 40, height: 40, background: 'transparent', border: '2px solid rgba(0,255,200,0.3)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 30px rgba(0, 255, 200, 0.1)', flexShrink: 0 }}>
+          <div style={{ width: 40, height: 40, background: 'rgba(0,0,0,0)', border: '2px solid rgba(0,255,200,0.3)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 30px rgba(0, 255, 200, 0.1)', flexShrink: 0 }}>
             <svg width="20" height="20" viewBox="0 0 100 100" fill="#00ffc8">
                <path d="M50 20 C45 20 40 25 35 35 L20 70 C18 75 22 80 28 78 C35 75 45 70 50 70 C55 70 65 75 72 78 C78 80 82 75 80 70 L65 35 C60 25 55 20 50 20 Z" />
             </svg>
           </div>
           <div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 950, margin: 0, letterSpacing: '-0.02em', background: 'linear-gradient(to bottom, #fff 50%, rgba(0,255,200,0.4))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', lineHeight: 1 }}>DIGITRAC</div>
+            <div style={{ fontSize: '1.4rem', fontWeight: 950, margin: 0, letterSpacing: '-0.02em', background: 'linear-gradient(to bottom, #fff 50%, rgba(0,255,200,0.4))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'rgba(0,0,0,0)', lineHeight: 1 }}>DIGITRAC</div>
             <div style={{ fontSize: '0.6rem', fontWeight: 900, color: '#00ffc8', letterSpacing: '0.4em', textTransform: 'uppercase', marginTop: '0.2rem' }}>ARCHE</div>
           </div>
         </div>
@@ -312,7 +312,7 @@ export default function ManagerDashboard() {
             <motion.div key="exec-dashboard" style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden' }}>
               {/* FINANCIAL & DURATION INTELLIGENCE */}
               {selectedProject && (
-                <div style={{ padding: '1.5rem 2rem', background: 'radial-gradient(ellipse at top, rgba(0,255,200,0.03) 0%, transparent 70%)', borderBottom: '1px solid rgba(255,255,255,0.05)', flexShrink: 0 }}>
+                <div style={{ padding: '1.5rem 2rem', background: 'radial-gradient(ellipse at top, rgba(0,255,200,0.03) 0%, rgba(0,0,0,0) 70%)', borderBottom: '1px solid rgba(255,255,255,0.05)', flexShrink: 0 }}>
                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.75rem' }}>
                       <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', padding: '1rem' }}>
                          <div style={{ fontSize: '0.55rem', color: '#8896ab', fontWeight: 800, marginBottom: '0.5rem' }}>PLANNED BUDGET</div>
@@ -389,7 +389,7 @@ export default function ManagerDashboard() {
                                 duration: r.duration || 0,
                                 booking_hours: r.est_hours || 0
                               });
-                            }} style={{ background:'transparent', border:'1px solid rgba(0,255,209,0.3)', color:'#00ffd1', padding:'0.3rem 0.75rem', borderRadius:'5px', fontSize:'0.6rem', fontWeight:800, cursor:'pointer' }}>
+                            }} style={{ background:'rgba(0,0,0,0)', border:'1px solid rgba(0,255,209,0.3)', color:'#00ffd1', padding:'0.3rem 0.75rem', borderRadius:'5px', fontSize:'0.6rem', fontWeight:800, cursor:'pointer' }}>
                               DEPLOY
                             </button>
                           </td>
@@ -544,7 +544,7 @@ export default function ManagerDashboard() {
                     </div>
                  </div>
                  <div style={{ display:'flex', justifyContent:'flex-end', gap:'0.5rem' }}>
-                    <button style={{ background:'transparent', border:'1px solid rgba(255,255,255,0.1)', color:'#fff', padding:'0.5rem 1rem', borderRadius:'6px', cursor:'pointer' }} onClick={() => setShowRideModal(false)}>CANCEL</button>
+                    <button style={{ background:'rgba(0,0,0,0)', border:'1px solid rgba(255,255,255,0.1)', color:'#fff', padding:'0.5rem 1rem', borderRadius:'6px', cursor:'pointer' }} onClick={() => setShowRideModal(false)}>CANCEL</button>
                     <button style={{ background:'#00C9A7', border:'none', color:'#000', padding:'0.5rem 1.5rem', borderRadius:'6px', cursor:'pointer', fontWeight:900 }} type="submit">COMMIT</button>
                  </div>
               </form>
@@ -564,7 +564,7 @@ export default function ManagerDashboard() {
                    <div style={{ fontSize:'0.65rem', fontWeight:900, color:'#8896ab' }}>RESOURCE_DEPLOYMENT</div>
                    <div style={{ fontSize:'0.75rem', fontWeight:800, color:'#fff', marginTop:'0.25rem' }}>{(assignModal.task_name||'').slice(0,55)}</div>
                 </div>
-                <button onClick={() => setAssignModal(null)} style={{ background:'transparent', border:'none', color:'#8896ab', cursor:'pointer' }}><Icons.X /></button>
+                <button onClick={() => setAssignModal(null)} style={{ background:'rgba(0,0,0,0)', border:'none', color:'#8896ab', cursor:'pointer' }}><Icons.X /></button>
               </div>
               <div style={{ padding:'1.5rem', overflowY: 'auto', maxHeight: '75vh' }}>
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.75rem', marginBottom:'0.75rem', padding:'0.75rem', background:'rgba(255,255,255,0.02)', borderRadius:'8px', fontSize:'0.62rem', color:'#8896ab' }}>
@@ -645,7 +645,7 @@ export default function ManagerDashboard() {
                 </div>
               </div>
               <div style={{ padding:'1rem 1.5rem', background:'rgba(0,0,0,0.3)', borderTop:'1px solid rgba(255,255,255,0.05)', display:'flex', justifyContent:'flex-end', gap:'0.75rem' }}>
-                <button onClick={()=>setAssignModal(null)} style={{ background:'transparent', border:'1px solid rgba(255,255,255,0.1)', color:'#fff', padding:'0.6rem 1.2rem', borderRadius:'7px', fontSize:'0.7rem', fontWeight:800, cursor:'pointer' }}>ABORT</button>
+                <button onClick={()=>setAssignModal(null)} style={{ background:'rgba(0,0,0,0)', border:'1px solid rgba(255,255,255,0.1)', color:'#fff', padding:'0.6rem 1.2rem', borderRadius:'7px', fontSize:'0.7rem', fontWeight:800, cursor:'pointer' }}>ABORT</button>
                 <button onClick={handleAssign} disabled={!form.resName||saving}
                   style={{ background:form.resName?'#00ffd1':'#1a1a1a', color:form.resName?'#000':'#444', border:'none', padding:'0.6rem 1.5rem', borderRadius:'7px', fontSize:'0.7rem', fontWeight:900, cursor:form.resName?'pointer':'not-allowed' }}>
                   {saving ? 'DEPLOYING...' : 'INITIALIZE_DEPLOYMENT'}
@@ -658,7 +658,7 @@ export default function ManagerDashboard() {
 
       <style>{`
         * { box-sizing:border-box; }
-        ::-webkit-scrollbar { width:4px; height:4px; } ::-webkit-scrollbar-track { background:transparent; } ::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.1); border-radius:2px; }
+        ::-webkit-scrollbar { width:4px; height:4px; } ::-webkit-scrollbar-track { background:rgba(0,0,0,0); } ::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.1); border-radius:2px; }
       `}</style>
     </div>
   );

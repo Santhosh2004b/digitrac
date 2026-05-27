@@ -47,7 +47,7 @@ export default function DashboardRedirect() {
           boxShadow: ["0 0 20px #3b82f6", "0 0 40px #3b82f6", "0 0 20px #3b82f6"]
         }} 
         transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-        style={{ width: 50, height: 50, borderRadius: '50%', border: '3px solid #3b82f6', borderTopColor: 'transparent' }}
+        style={{ width: 50, height: 50, borderRadius: '50%', border: '3px solid #3b82f6', borderTopColor: 'rgba(0,0,0,0)' }}
       />
       <div style={{ fontSize: '0.7rem', fontWeight: 900, color: '#3b82f6', letterSpacing: '0.5em', textTransform: 'uppercase' }}>
         Authorizing Command Access...

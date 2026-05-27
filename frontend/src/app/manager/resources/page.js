@@ -155,13 +155,13 @@ export default function ResourceHub() {
       {/* Sidebar */}
       <aside style={{ width:240, background:'#05070f', borderRight:'1px solid rgba(0,255,200,0.08)', display:'flex', flexDirection:'column', padding:'1.5rem 0.75rem', flexShrink:0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0 0.5rem', marginBottom: '2rem' }}>
-          <div style={{ width: 40, height: 40, background: 'transparent', border: '2px solid rgba(0,255,200,0.3)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 30px rgba(0, 255, 200, 0.1)', flexShrink: 0 }}>
+          <div style={{ width: 40, height: 40, background: 'rgba(0,0,0,0)', border: '2px solid rgba(0,255,200,0.3)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 30px rgba(0, 255, 200, 0.1)', flexShrink: 0 }}>
             <svg width="20" height="20" viewBox="0 0 100 100" fill="#00ffc8">
                <path d="M50 20 C45 20 40 25 35 35 L20 70 C18 75 22 80 28 78 C35 75 45 70 50 70 C55 70 65 75 72 78 C78 80 82 75 80 70 L65 35 C60 25 55 20 50 20 Z" />
             </svg>
           </div>
           <div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 950, margin: 0, letterSpacing: '-0.02em', background: 'linear-gradient(to bottom, #fff 50%, rgba(0,255,200,0.4))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', lineHeight: 1 }}>DIGITRAC</div>
+            <div style={{ fontSize: '1.4rem', fontWeight: 950, margin: 0, letterSpacing: '-0.02em', background: 'linear-gradient(to bottom, #fff 50%, rgba(0,255,200,0.4))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'rgba(0,0,0,0)', lineHeight: 1 }}>DIGITRAC</div>
             <div style={{ fontSize: '0.6rem', fontWeight: 900, color: '#00ffc8', letterSpacing: '0.4em', textTransform: 'uppercase', marginTop: '0.2rem' }}>ARCHE</div>
           </div>
         </div>
@@ -171,7 +171,7 @@ export default function ResourceHub() {
         </div>
         <div style={{ fontSize: '0.55rem', color: 'rgba(136,150,171,0.5)', fontWeight: 800, letterSpacing: '0.15em', padding: '1rem 0.75rem 0.5rem' }}>OPERATIONS</div>
         {[{ label: 'Resources', icon: <Icons.Users />, path: '/manager/resources', id: 'RES' }, { label: 'Time Logs', icon: <Icons.Clock />, path: '/manager/logs', id: 'LOGS' }].map(item => (
-          <div key={item.id} onClick={() => navTo(item.path)} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 0.75rem', borderRadius: '8px', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 700, marginBottom: '2px', transition: 'all 0.2s', background: item.id === 'RES' ? 'rgba(0,255,200,0.06)' : 'rgba(0,0,0,0)', color: item.id === 'RES' ? '#00ffd1' : '#8896ab', borderLeft: item.id === 'RES' ? '2px solid #00ffd1' : '2px solid transparent' }}>
+          <div key={item.id} onClick={() => navTo(item.path)} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 0.75rem', borderRadius: '8px', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 700, marginBottom: '2px', transition: 'all 0.2s', background: item.id === 'RES' ? 'rgba(0,255,200,0.06)' : 'rgba(0,0,0,0)', color: item.id === 'RES' ? '#00ffd1' : '#8896ab', borderLeft: item.id === 'RES' ? '2px solid #00ffd1' : '2px solid rgba(0,0,0,0)' }}>
             {item.icon}<span>{item.label}</span>
           </div>
         ))}
@@ -205,7 +205,7 @@ export default function ResourceHub() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#0d1117', border: '1px solid rgba(0,242,255,0.15)', padding: '0.5rem 1rem', borderRadius: '10px', width: '260px' }}>
               <Icons.Search />
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="FILTER RESOURCE MASTER..."
-                style={{ background: 'transparent', border: 'none', color: '#fff', outline: 'none', fontSize: '0.72rem', fontWeight: 700, width: '100%' }} />
+                style={{ background: 'rgba(0,0,0,0)', border: 'none', color: '#fff', outline: 'none', fontSize: '0.72rem', fontWeight: 700, width: '100%' }} />
             </div>
             <button onClick={() => setAddModal(true)} style={{ background: '#00ffd1', color: '#000', border: 'none', padding: '0.6rem 1.25rem', borderRadius: '10px', fontSize: '0.72rem', fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 0 15px rgba(0, 255, 209, 0.3)' }}>
               <Icons.Plus /> REGISTER ENGINEER
@@ -283,7 +283,7 @@ export default function ResourceHub() {
                     <td style={{ padding: '0.85rem 1rem' }}>
                       <div style={{ display: 'flex', gap: '0.5rem' }}>
                         <button onClick={(e) => { e.stopPropagation(); router.push('/manager'); }}
-                          style={{ background: 'transparent', border: '1px solid rgba(0,255,209,0.3)', color: '#00ffd1', padding: '0.3rem 0.6rem', borderRadius: '5px', fontSize: '0.6rem', fontWeight: 800, cursor: 'pointer' }}>
+                          style={{ background: 'rgba(0,0,0,0)', border: '1px solid rgba(0,255,209,0.3)', color: '#00ffd1', padding: '0.3rem 0.6rem', borderRadius: '5px', fontSize: '0.6rem', fontWeight: 800, cursor: 'pointer' }}>
                           DEPLOY
                         </button>
                         <button onClick={(e) => { e.stopPropagation(); handleDelete(r.id, r.name); }}
@@ -305,7 +305,7 @@ export default function ResourceHub() {
                 style={{ background: '#0d1117', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '1.5rem', height: 'fit-content' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                   <span style={{ fontSize: '0.65rem', fontWeight: 900, color: '#8896ab', letterSpacing: '0.1em' }}>MASTER_PROFILE</span>
-                  <button onClick={() => setSelected(null)} style={{ background: 'transparent', border: 'none', color: '#8896ab', cursor: 'pointer' }}><Icons.X /></button>
+                  <button onClick={() => setSelected(null)} style={{ background: 'rgba(0,0,0,0)', border: 'none', color: '#8896ab', cursor: 'pointer' }}><Icons.X /></button>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
                   <div style={{ width: 48, height: 48, borderRadius: '12px', background: 'linear-gradient(135deg, #6C63FF, #3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', fontWeight: 950 }}>
@@ -359,7 +359,7 @@ export default function ResourceHub() {
                     <div style={{ fontSize:'0.65rem', fontWeight:900, color:'#8896ab', letterSpacing:'0.1em' }}>CREATE_CENTRAL_RESOURCE</div>
                     <div style={{ fontSize:'0.95rem', fontWeight:950, color:'#fff', marginTop:'0.25rem' }}>Register New Master Resource</div>
                   </div>
-                  <button type="button" onClick={() => setAddModal(false)} style={{ background:'transparent', border:'none', color:'#8896ab', cursor:'pointer' }}><Icons.X /></button>
+                  <button type="button" onClick={() => setAddModal(false)} style={{ background:'rgba(0,0,0,0)', border:'none', color:'#8896ab', cursor:'pointer' }}><Icons.X /></button>
                 </div>
                 <div style={{ padding:'1.5rem', overflowY:'auto', maxHeight:'70vh' }}>
                   {error && (
@@ -452,7 +452,7 @@ export default function ResourceHub() {
                   </div>
                 </div>
                 <div style={{ padding:'1rem 1.5rem', background:'rgba(0,0,0,0.3)', borderTop:'1px solid rgba(255,255,255,0.05)', display:'flex', justifyContent:'flex-end', gap:'0.75rem' }}>
-                  <button type="button" onClick={()=>setAddModal(false)} style={{ background:'transparent', border:'1px solid rgba(255,255,255,0.1)', color:'#fff', padding:'0.6rem 1.2rem', borderRadius:'7px', fontSize:'0.7rem', fontWeight:800, cursor:'pointer' }}>ABORT</button>
+                  <button type="button" onClick={()=>setAddModal(false)} style={{ background:'rgba(0,0,0,0)', border:'1px solid rgba(255,255,255,0.1)', color:'#fff', padding:'0.6rem 1.2rem', borderRadius:'7px', fontSize:'0.7rem', fontWeight:800, cursor:'pointer' }}>ABORT</button>
                   <button type="submit" disabled={saving}
                     style={{ background:'#00ffd1', color:'#000', border:'none', padding:'0.6rem 1.5rem', borderRadius:'7px', fontSize:'0.7rem', fontWeight:900, cursor:'pointer', boxShadow: '0 0 15px rgba(0, 255, 209, 0.2)' }}>
                     {saving ? 'REGISTERING...' : 'REGISTER MASTER'}
@@ -466,7 +466,7 @@ export default function ResourceHub() {
 
       <style>{`
         * { box-sizing: border-box; }
-        ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+        ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: rgba(0,0,0,0); } ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
         tr:hover { background: rgba(255,255,255,0.015) !important; }
         @media (max-width: 768px) {
           body > div { flex-direction: column; }

@@ -122,8 +122,8 @@ export default function LoginPage() {
       
       {/* ══ Background ══ */}
       <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
-        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.05) 0%, transparent 50%)' }} />
-        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,0.01) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.01) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.05) 0%, rgba(0,0,0,0) 50%)' }} />
+        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,0.01) 1px, rgba(0,0,0,0) 1px), linear-gradient(90deg, rgba(255,255,255,0.01) 1px, rgba(0,0,0,0) 1px)', backgroundSize: '60px 60px' }} />
       </div>
 
       <AnimatePresence>
@@ -140,7 +140,7 @@ export default function LoginPage() {
                     cx="50" cy="50" r="46" 
                     stroke="#00ffc8" 
                     strokeWidth="3" 
-                    fill="transparent"
+                    fill="rgba(0,0,0,0)"
                     strokeDasharray="289"
                     initial={{ strokeDashoffset: 289 }}
                     animate={{ strokeDashoffset: 0 }}
@@ -158,7 +158,7 @@ export default function LoginPage() {
               </motion.div>
             </div>
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <h1 style={{ fontSize: '1.8rem', fontWeight: 900, margin: 0, letterSpacing: '-0.02em', background: 'linear-gradient(to bottom, #fff 50%, rgba(0,255,200,0.4))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>DIGITRAC</h1>
+              <h1 style={{ fontSize: '1.8rem', fontWeight: 900, margin: 0, letterSpacing: '-0.02em', background: 'linear-gradient(to bottom, #fff 50%, rgba(0,255,200,0.4))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'rgba(0,0,0,0)' }}>DIGITRAC</h1>
               <div style={{ fontSize: '0.65rem', fontWeight: 900, color: '#00ffc8', letterSpacing: '0.4em', textTransform: 'uppercase', marginTop: '0.2rem' }}>ARCHE</div>
             </motion.div>
           </motion.div>
@@ -169,12 +169,12 @@ export default function LoginPage() {
         
         {/* Brand Header */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '1.25rem' }}>
-          <div style={{ width: 40, height: 40, background: 'transparent', border: '2px solid rgba(0,255,200,0.3)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 30px rgba(0, 255, 200, 0.1)', marginBottom: '0.5rem' }}>
+          <div style={{ width: 40, height: 40, background: 'rgba(0,0,0,0)', border: '2px solid rgba(0,255,200,0.3)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 30px rgba(0, 255, 200, 0.1)', marginBottom: '0.5rem' }}>
             <svg width="20" height="20" viewBox="0 0 100 100" fill="#00ffc8">
                <path d="M50 20 C45 20 40 25 35 35 L20 70 C18 75 22 80 28 78 C35 75 45 70 50 70 C55 70 65 75 72 78 C78 80 82 75 80 70 L65 35 C60 25 55 20 50 20 Z" />
             </svg>
           </div>
-          <h1 style={{ fontSize: '1.8rem', fontWeight: 900, margin: 0, letterSpacing: '-0.02em', background: 'linear-gradient(to bottom, #fff 50%, rgba(0,255,200,0.4))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>DIGITRAC</h1>
+          <h1 style={{ fontSize: '1.8rem', fontWeight: 900, margin: 0, letterSpacing: '-0.02em', background: 'linear-gradient(to bottom, #fff 50%, rgba(0,255,200,0.4))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'rgba(0,0,0,0)' }}>DIGITRAC</h1>
           <div style={{ fontSize: '0.65rem', fontWeight: 900, color: '#00ffc8', letterSpacing: '0.4em', textTransform: 'uppercase', marginTop: '0.2rem' }}>ARCHE</div>
         </div>
 
@@ -199,7 +199,7 @@ export default function LoginPage() {
 
           {scanning && (
             <motion.div initial={{ top: '0%' }} animate={{ top: '100%' }} transition={{ duration: 1.5, repeat: 0, ease: 'linear' }}
-              style={{ position: 'absolute', left: 0, width: '100%', height: '2px', background: 'linear-gradient(to right, transparent, #3b82f6, transparent)', boxShadow: '0 0 15px #3b82f6', zIndex: 10 }}
+              style={{ position: 'absolute', left: 0, width: '100%', height: '2px', background: 'linear-gradient(to right, rgba(0,0,0,0), #3b82f6, rgba(0,0,0,0))', boxShadow: '0 0 15px #3b82f6', zIndex: 10 }}
             />
           )}
 
@@ -222,7 +222,7 @@ export default function LoginPage() {
               />
               {error && <div style={{ color: '#fca5a5', fontSize: '0.6rem', fontWeight: 900, textAlign: 'center', background: 'rgba(239, 68, 68, 0.05)', padding: '0.5rem', borderRadius: '0.4rem', border: '1px solid rgba(239, 68, 68, 0.1)' }}>{error}</div>}
               <motion.button whileHover={{ scale: 1.02, background: '#00ffc8', color: '#000' }} whileTap={{ scale: 0.98 }} disabled={loading}
-                style={{ width: '100%', background: 'transparent', border: '1px solid #00ffc8', color: '#00ffc8', padding: '0.75rem 0.85rem', borderRadius: '0.4rem', fontSize: '0.75rem', fontWeight: 900, cursor: 'pointer', letterSpacing: '0.15em', transition: 'all 0.3s', boxSizing: 'border-box' }}>
+                style={{ width: '100%', background: 'rgba(0,0,0,0)', border: '1px solid #00ffc8', color: '#00ffc8', padding: '0.75rem 0.85rem', borderRadius: '0.4rem', fontSize: '0.75rem', fontWeight: 900, cursor: 'pointer', letterSpacing: '0.15em', transition: 'all 0.3s', boxSizing: 'border-box' }}>
                 {loading ? 'PROCESSING...' : 'INITIALIZE ACCOUNT'}
               </motion.button>
             </form>
@@ -241,7 +241,7 @@ export default function LoginPage() {
               />
               {error && <div style={{ color: '#fca5a5', fontSize: '0.6rem', fontWeight: 900, textAlign: 'center', background: 'rgba(239, 68, 68, 0.05)', padding: '0.5rem', borderRadius: '0.4rem', border: '1px solid rgba(239, 68, 68, 0.1)' }}>{error}</div>}
               <motion.button whileHover={{ scale: 1.02, background: '#00ffc8', color: '#000' }} whileTap={{ scale: 0.98 }} disabled={loading}
-                style={{ width: '100%', background: 'transparent', border: '1px solid #00ffc8', color: '#00ffc8', padding: '0.75rem 0.85rem', borderRadius: '0.4rem', fontSize: '0.75rem', fontWeight: 900, cursor: 'pointer', letterSpacing: '0.15em', transition: 'all 0.3s', boxSizing: 'border-box' }}>
+                style={{ width: '100%', background: 'rgba(0,0,0,0)', border: '1px solid #00ffc8', color: '#00ffc8', padding: '0.75rem 0.85rem', borderRadius: '0.4rem', fontSize: '0.75rem', fontWeight: 900, cursor: 'pointer', letterSpacing: '0.15em', transition: 'all 0.3s', boxSizing: 'border-box' }}>
                 {loading ? 'VERIFYING...' : 'VERIFY ASSIGNMENT'}
               </motion.button>
             </form>
@@ -259,7 +259,7 @@ export default function LoginPage() {
               />
               {error && <div style={{ color: '#fca5a5', fontSize: '0.6rem', fontWeight: 900, textAlign: 'center', background: 'rgba(239, 68, 68, 0.05)', padding: '0.5rem', borderRadius: '0.4rem', border: '1px solid rgba(239, 68, 68, 0.1)' }}>{error}</div>}
               <motion.button whileHover={{ scale: 1.02, background: '#fff', color: '#000' }} whileTap={{ scale: 0.98 }} disabled={loading}
-                style={{ width: '100%', background: 'transparent', border: '1px solid #3b82f6', color: '#3b82f6', padding: '0.75rem 0.85rem', borderRadius: '0.4rem', fontSize: '0.75rem', fontWeight: 900, cursor: 'pointer', letterSpacing: '0.15em', transition: 'all 0.3s', boxSizing: 'border-box' }}>
+                style={{ width: '100%', background: 'rgba(0,0,0,0)', border: '1px solid #3b82f6', color: '#3b82f6', padding: '0.75rem 0.85rem', borderRadius: '0.4rem', fontSize: '0.75rem', fontWeight: 900, cursor: 'pointer', letterSpacing: '0.15em', transition: 'all 0.3s', boxSizing: 'border-box' }}>
                 {loading ? 'AUTHENTICATING...' : 'INITIALIZE ACCESS'}
               </motion.button>
             </form>

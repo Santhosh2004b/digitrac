@@ -41,7 +41,7 @@ function Sidebar({ onNav, active }) {
       ].map(item => (
         <div key={item.path} onClick={() => router.push(item.path)} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.7rem 0.75rem', borderRadius: '8px', cursor: 'pointer', color: '#8896ab', fontSize: '0.72rem', fontWeight: 700, marginBottom: '2px', transition: 'all 0.2s' }}
           onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
-          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+          onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,0,0,0)'}>
           {item.icon}<span>{item.label}</span>
         </div>
       ))}
@@ -53,9 +53,9 @@ function Sidebar({ onNav, active }) {
       ].map(item => (
         <div key={item.id} onClick={() => router.push(item.path)}
           style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.7rem 0.75rem', borderRadius: '8px', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 700, marginBottom: '2px', transition: 'all 0.2s', position: 'relative',
-            background: item.id === 'LOGS' ? 'rgba(0,255,200,0.06)' : 'transparent',
+            background: item.id === 'LOGS' ? 'rgba(0,255,200,0.06)' : 'rgba(0,0,0,0)',
             color: item.id === 'LOGS' ? '#00ffd1' : '#8896ab',
-            borderLeft: item.id === 'LOGS' ? '2px solid #00ffd1' : '2px solid transparent' }}>
+            borderLeft: item.id === 'LOGS' ? '2px solid #00ffd1' : '2px solid rgba(0,0,0,0)' }}>
           {item.icon}<span>{item.label}</span>
         </div>
       ))}
@@ -222,7 +222,7 @@ export default function TimeLogs() {
       <style>{`
         @keyframes pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.4; transform:scale(0.8); } }
         * { box-sizing: border-box; }
-        ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+        ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: rgba(0,0,0,0); } ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
         @media (max-width: 768px) {
           body > div { flex-direction: column; }
           aside { width: 100% !important; border-right: none !important; border-bottom: 1px solid rgba(0,255,200,0.08); padding: 1rem !important; }
