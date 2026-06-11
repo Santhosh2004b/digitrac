@@ -404,6 +404,11 @@ export default function ManagerDashboard() {
       color:'#1e293b', 
       fontFamily:"'Inter',sans-serif" 
     }}>
+      <style>{`
+        .data-table th:not(:last-child), .data-table td:not(:last-child) {
+          border-right: 1px solid rgba(0,0,0,0.06);
+        }
+      `}</style>
       {/* Elite Main Background Glows */}
       <div style={{ position: 'absolute', top: 0, right: 0, width: '40vw', height: '40vw', background: 'radial-gradient(circle, rgba(59,130,246,0.03) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 0 }}></div>
       <div style={{ position: 'absolute', bottom: 0, left: '260px', width: '30vw', height: '30vw', background: 'radial-gradient(circle, rgba(139,92,246,0.03) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 0 }}></div>
@@ -413,7 +418,7 @@ export default function ManagerDashboard() {
 
       <aside style={{ 
         width: isSidebarOpen ? 260 : 70, 
-        transition: 'width 3s cubic-bezier(0.4, 0, 0.2, 1)',
+        transition: isSidebarOpen ? 'width 2s cubic-bezier(0.4, 0, 0.2, 1) 0s' : 'width 2s cubic-bezier(0.4, 0, 0.2, 1) 0.5s',
         height: '100vh',
         position: 'sticky',
         top: 0,
@@ -442,7 +447,7 @@ export default function ManagerDashboard() {
           <motion.div 
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             animate={{ rotate: isSidebarOpen ? 180 : 0 }}
-            transition={{ duration: 3, ease: "easeInOut" }}
+            transition={{ duration: 2, ease: "easeInOut" }}
             style={{ position: 'absolute', right: isSidebarOpen ? '-10px' : 'auto', top: '-10px', color: '#94a3b8', cursor: 'pointer', padding: '0.5rem', display: 'flex', justifyContent: 'center' }}
           >
             <Icons.Menu />
@@ -451,12 +456,18 @@ export default function ManagerDashboard() {
           <motion.div 
             animate={{ filter: ['drop-shadow(0 2px 10px rgba(255,255,255,0.1))', 'drop-shadow(0 0 15px rgba(59,130,246,0.6))', 'drop-shadow(0 2px 10px rgba(255,255,255,0.1))'] }}
             transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-            style={{ fontSize: isSidebarOpen ? '1.5rem' : '1rem', fontWeight: 900, background: 'linear-gradient(180deg, #ffffff 0%, #94a3b8 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-0.02em', lineHeight: 1, marginTop: '2rem', transition: 'font-size 0.3s' }}
+            style={{ fontSize: isSidebarOpen ? '1.5rem' : '1rem', fontWeight: 900, background: 'linear-gradient(180deg, #ffffff 0%, #94a3b8 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-0.02em', lineHeight: 1, marginTop: '2rem', transition: 'font-size 2s' }}
           >
             {isSidebarOpen ? 'DIGITRAC' : 'DT'}
           </motion.div>
 
-          <div style={{ display: isSidebarOpen ? 'block' : 'none', fontSize: '0.65rem', fontWeight: 800, color: '#3b82f6', letterSpacing: '0.15em', marginTop: '0.4rem', textShadow: '0 0 10px rgba(59,130,246,0.4)' }}>PROJECT MANAGER</div>
+          <div style={{ 
+            opacity: isSidebarOpen ? 1 : 0, 
+            visibility: isSidebarOpen ? 'visible' : 'hidden',
+            transition: isSidebarOpen ? 'opacity 0.5s ease 1.5s, visibility 0s 1.5s' : 'opacity 0.5s ease 0s, visibility 0s 0.5s',
+            whiteSpace: 'nowrap',
+            fontSize: '0.65rem', fontWeight: 800, color: '#3b82f6', letterSpacing: '0.15em', marginTop: '0.4rem', textShadow: '0 0 10px rgba(59,130,246,0.4)' 
+          }}>PROJECT MANAGER</div>
 
         </div>
 
@@ -466,19 +477,26 @@ export default function ManagerDashboard() {
 
           <motion.div 
             onClick={() => { setActiveTab('DASHBOARD'); setSelectedProject(null); }} 
-            animate={activeTab === 'DASHBOARD' ? { boxShadow: ['inset 2px 0 0 #3b82f6, inset 0 0 10px rgba(59,130,246,0.05)', 'inset 2px 0 0 #3b82f6, inset 0 0 30px rgba(59,130,246,0.25)', 'inset 2px 0 0 #3b82f6, inset 0 0 10px rgba(59,130,246,0.05)'] } : { boxShadow: 'inset 0 0 0 transparent' }}
+            animate={(activeTab === 'DASHBOARD' || activeTab === 'PROJECTS') ? { boxShadow: ['inset 2px 0 0 #3b82f6, inset 0 0 10px rgba(59,130,246,0.05)', 'inset 2px 0 0 #3b82f6, inset 0 0 30px rgba(59,130,246,0.25)', 'inset 2px 0 0 #3b82f6, inset 0 0 10px rgba(59,130,246,0.05)'] } : { boxShadow: 'inset 0 0 0 transparent' }}
             transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
             style={{ 
-              display:'flex', alignItems:'center', gap:'0.75rem', padding:'0.85rem 1rem', borderRadius:'8px', fontSize:'0.85rem', fontWeight:600, 
-              background: activeTab === 'DASHBOARD' ? 'rgba(59,130,246,0.08)' : 'transparent', 
-              color: activeTab === 'DASHBOARD' ? '#60a5fa' : '#64748b', 
-              cursor: 'pointer', transition: 'background 0.3s, color 0.3s'
+              display:'flex', alignItems:'center', justifyContent: isSidebarOpen ? 'flex-start' : 'center', gap: isSidebarOpen ? '0.75rem' : '0', padding:'0.85rem 1rem', borderRadius:'8px', fontSize:'0.85rem', fontWeight:600, 
+              background: (activeTab === 'DASHBOARD' || activeTab === 'PROJECTS') ? 'rgba(59,130,246,0.08)' : 'transparent', 
+              color: (activeTab === 'DASHBOARD' || activeTab === 'PROJECTS') ? '#60a5fa' : '#64748b', 
+              cursor: 'pointer', transition: 'background 0.3s, color 0.3s, justify-content 0.3s, gap 0.3s'
             }}
-            onMouseOver={e => { if(activeTab !== 'DASHBOARD') { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.color = '#e2e8f0'; } }}
-            onMouseOut={e => { if(activeTab !== 'DASHBOARD') { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#64748b'; } }}
+            onMouseOver={e => { if(activeTab !== 'DASHBOARD' && activeTab !== 'PROJECTS') { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.color = '#e2e8f0'; } }}
+            onMouseOut={e => { if(activeTab !== 'DASHBOARD' && activeTab !== 'PROJECTS') { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#64748b'; } }}
           >
             <Icons.Grid />
-            <span style={{ display: isSidebarOpen ? 'block' : 'none' }}>Dashboard</span>
+            <span style={{ 
+              opacity: isSidebarOpen ? 1 : 0, 
+              width: isSidebarOpen ? 'auto' : 0,
+              visibility: isSidebarOpen ? 'visible' : 'hidden',
+              transition: isSidebarOpen ? 'opacity 0.5s ease 1.5s, visibility 0s 1.5s' : 'opacity 0.5s ease 0s, visibility 0s 0.5s, width 0.5s',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden'
+            }}>Dashboard</span>
           </motion.div>
 
           
@@ -487,7 +505,13 @@ export default function ManagerDashboard() {
 
 
 
-          <div style={{ display: isSidebarOpen ? 'block' : 'none', marginTop: '1.5rem', padding: '0 1rem', fontSize: '0.6rem', fontWeight: 800, color: '#334155', letterSpacing: '0.15em' }}>SYSTEM ALERTS</div>
+          <div style={{ 
+              opacity: isSidebarOpen ? 1 : 0, 
+              visibility: isSidebarOpen ? 'visible' : 'hidden',
+              transition: isSidebarOpen ? 'opacity 0.5s ease 1.5s, visibility 0s 1.5s' : 'opacity 0.5s ease 0s, visibility 0s 0.5s',
+              whiteSpace: 'nowrap',
+              marginTop: '1.5rem', padding: '0 1rem', fontSize: '0.6rem', fontWeight: 800, color: '#334155', letterSpacing: '0.15em' 
+          }}>SYSTEM ALERTS</div>
 
           
 
@@ -495,15 +519,22 @@ export default function ManagerDashboard() {
 
             onClick={() => setShowNotifications(!showNotifications)} 
 
-            style={{ display:'flex', alignItems:'center', justifyContent: 'space-between', padding:'0.85rem 1rem', borderRadius:'8px', fontSize:'0.85rem', fontWeight:600, color: '#94a3b8', cursor: 'pointer', position: 'relative', transition: 'all 0.2s', borderLeft: '3px solid transparent' }}
+            style={{ display:'flex', alignItems:'center', justifyContent: isSidebarOpen ? 'space-between' : 'center', padding:'0.85rem 1rem', borderRadius:'8px', fontSize:'0.85rem', fontWeight:600, color: '#94a3b8', cursor: 'pointer', position: 'relative', transition: 'all 0.2s', borderLeft: '3px solid transparent' }}
             onMouseOver={e => { e.currentTarget.style.color = '#f8fafc'; e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
             onMouseOut={e => { e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.background = 'transparent' }}
 
           >
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: isSidebarOpen ? 'flex-start' : 'center', gap: isSidebarOpen ? '0.75rem' : '0' }}>
 
-                <Icons.Bell /><span style={{ display: isSidebarOpen ? 'block' : 'none' }}>Notifications</span>
+                <Icons.Bell /><span style={{ 
+                  opacity: isSidebarOpen ? 1 : 0, 
+                  width: isSidebarOpen ? 'auto' : 0,
+                  visibility: isSidebarOpen ? 'visible' : 'hidden',
+                  transition: isSidebarOpen ? 'opacity 0.5s ease 1.5s, visibility 0s 1.5s' : 'opacity 0.5s ease 0s, visibility 0s 0.5s, width 0.5s',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden'
+                }}>Notifications</span>
 
             </div>
 
@@ -528,14 +559,21 @@ export default function ManagerDashboard() {
             style={{ 
               width:'100%', padding:'0.75rem', background:'linear-gradient(135deg, rgba(239,68,68,0.1), rgba(185,28,28,0.2))', color:'#fca5a5', 
               border:'1px solid rgba(239,68,68,0.25)', borderRadius:'8px', fontSize:'0.75rem', fontWeight:800, 
-              cursor:'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem', 
+              cursor:'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: isSidebarOpen ? '0.6rem' : '0', 
               transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', backdropFilter: 'blur(10px)', letterSpacing: '0.05em',
               boxShadow: '0 4px 15px rgba(239,68,68,0.1)'
             }} 
             onMouseOver={e => { e.currentTarget.style.background = 'linear-gradient(135deg, rgba(239,68,68,0.2), rgba(185,28,28,0.3))'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.boxShadow = '0 0 20px rgba(239,68,68,0.3)'; e.currentTarget.style.transform = 'translateY(-1px)'; }} 
             onMouseOut={e => { e.currentTarget.style.background = 'linear-gradient(135deg, rgba(239,68,68,0.1), rgba(185,28,28,0.2))'; e.currentTarget.style.color = '#fca5a5'; e.currentTarget.style.boxShadow = '0 4px 15px rgba(239,68,68,0.1)'; e.currentTarget.style.transform = 'none'; }}
           >
-            <Icons.Logout /> <span style={{ display: isSidebarOpen ? 'block' : 'none' }}>SIGN OUT</span>
+            <Icons.Logout /> <span style={{ 
+              opacity: isSidebarOpen ? 1 : 0, 
+              width: isSidebarOpen ? 'auto' : 0,
+              visibility: isSidebarOpen ? 'visible' : 'hidden',
+              transition: isSidebarOpen ? 'opacity 0.5s ease 1.5s, visibility 0s 1.5s' : 'opacity 0.5s ease 0s, visibility 0s 0.5s, width 0.5s',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden'
+            }}>SIGN OUT</span>
           </button>
         </div>
 
@@ -1010,7 +1048,7 @@ export default function ManagerDashboard() {
                                 })()}
 
                                 <div style={{ background: 'linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%)', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.02)' }}>
-                                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', color: '#0f172a' }}>
+                                <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', color: '#0f172a' }}>
 
                                 <thead>
                                     <tr style={{ borderBottom: '2px solid #cbd5e1', background: '#ffffff', boxShadow: '0 2px 5px rgba(0,0,0,0.02)' }}>
@@ -1152,7 +1190,7 @@ export default function ManagerDashboard() {
                         )}
                         {innerTab === 'WORKFORCE' && (
                             <div style={{ background: 'linear-gradient(135deg, #fdf4ff 0%, #ede9fe 100%)', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.02)' }}>
-                            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '1200px', color: '#0f172a' }}>
+                            <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '1200px', color: '#0f172a' }}>
                                 <thead>
                                     <tr style={{ borderBottom: '2px solid #cbd5e1', background: '#ffffff', boxShadow: '0 2px 5px rgba(0,0,0,0.02)' }}>
                                         {['Task', 'Employee', 'ID / Grade', 'Practice', 'Cost/Hr', 'Bill/Hr', 'Total Cost', 'Billable Value', 'Margin'].map(h => (

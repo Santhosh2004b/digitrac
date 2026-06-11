@@ -352,7 +352,7 @@ def log_item_hours(
     total_implementation_cost = 0.0
     total_forecasted_implementation_cost = 0.0
 
-    for i in items:
+    for i in items_to_update:
         p_hrs = float(i.get("planned_hours", 0.0))
         a_hrs = float(i.get("actual_hours", 0.0))
         c_per_hr = float(i.get("cost_per_hour", 0.0))
