@@ -1,7 +1,21 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, JSON
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, JSON, Boolean
 from sqlalchemy.orm import relationship
 from app.db.session import Base
 from datetime import datetime
+
+class InAppNotification(Base):
+    __tablename__ = "project_notifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    pm_email = Column(String, index=True, nullable=False)
+    project_id = Column(Integer, ForeignKey("projects.id"), nullable=True)
+    project_name = Column(String, nullable=False)
+    customer_name = Column(String, nullable=True)
+    assigned_by = Column(String, nullable=False)
+    upload_date = Column(DateTime, default=datetime.utcnow)
+    project_duration = Column(String, nullable=True)
+    is_read = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
 class ApprovedProject(Base):
     __tablename__ = "approved_projects"
@@ -41,7 +55,20 @@ class Project(Base):
     status = Column(String, default="DRAFT") # DRAFT, PROPOSAL, ASSIGNED, ACTIVE, COMPLETED
     start_date = Column(DateTime, nullable=True)
 
+    # Project Information Fields
+    customer_name = Column(String, nullable=True)
+    customer_payment_terms = Column(String, nullable=True)
+    vendor_payment_terms = Column(String, nullable=True)
+    po_reference = Column(String, nullable=True)
+    amendment_details = Column(String, nullable=True)
+
     # Cost Summary Fields (Baseline)
+    total_cost_price = Column(Float, default=0.0)
+    total_sell_price = Column(Float, default=0.0)
+    gst = Column(Float, default=0.0)
+    total_sell_price_with_gst = Column(Float, default=0.0)
+    pmc_cost = Column(Float, default=0.0)
+    margin_amount = Column(Float, default=0.0)
     sale_value = Column(Float, default=0.0)
     capex = Column(Float, default=0.0)
     opex = Column(Float, default=0.0)

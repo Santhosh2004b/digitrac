@@ -42,8 +42,7 @@ from app.models.project import Project, ProjectResource, ApprovedProject, Missio
 
 @router.get("/projects")
 def get_my_projects(db: Session = Depends(get_db), current_manager: User = Depends(get_current_manager), region: str = "GLOBAL"):
-    # FETCH ONLY projects where assigned_manager_email = logged_in_user, unless it's a VP
-    if current_manager.role == "VP":
+    if current_manager.role == "VP" or current_manager.role == "PC":
         query = db.query(ApprovedProject)
     else:
         query = db.query(ApprovedProject).filter(ApprovedProject.assigned_manager_email == current_manager.email)
@@ -52,122 +51,101 @@ def get_my_projects(db: Session = Depends(get_db), current_manager: User = Depen
     result = []
     
     for p in projects:
-        items = p.full_excel_data or []
-        if region != "GLOBAL":
-            items = [i for i in items if i.get("sales_region") == region]
-        
+        full_data = p.full_excel_data
+        items = full_data.get("project_costing", []) if isinstance(full_data, dict) else (full_data or [])
+        project_info = full_data.get("project_info", {}) if isinstance(full_data, dict) else {}
+
         if not items and region != "GLOBAL":
             continue
 
-        ma = db.query(MissionAssignment).filter(
-            MissionAssignment.mission_name == p.project_name,
-            MissionAssignment.manager_email == current_manager.email
-        ).first()
-        artifact_path = ma.artifact_path if ma else None
-
-        # Calculate resources for this project
-        project_resources = []
-        for idx, i in enumerate(items):
-            # Fallback for ID consistency
-            node_id = i.get("id") if i.get("id") is not None else (idx + 1)
-            
-            project_resources.append({
-                "id": node_id,
-                "sap_id": i.get("sap_id"),
-                "task_name": i.get("description") or "N/A",
-                "role": i.get("practice") or i.get("sbu") or "Mission Resource",
-                "component": i.get("component"),
-                "item_type": i.get("item_type"),
-                "sales_region": i.get("sales_region"),
-                "oem": i.get("oem"),
-                "qty": i.get("qty", 0),
-                "purchase_total": i.get("purchase_total", 0),
-                "selling_total": i.get("selling_total", 0),
-                "net_value": i.get("net_value", 0),
-                "margin_pct": i.get("margin_pct", 0),
-                "gm_pct": i.get("margin_pct", 0),
-                "margin": f"{i.get('margin_pct', 0)}%",
-                "est_hours": i.get("est_hours", 0),
-                "status": i.get("status", "Pending"),
-                "name": i.get("assigned_person") or "Unassigned",
-                
-                # Centralized Pool Fields
-                "employee_id": i.get("employee_id") or "N/A",
-                "grade": i.get("grade") or "N/A",
-                "role_practice": i.get("role_practice") or "N/A",
-                "hourly_billing_rate": i.get("hourly_billing_rate") or i.get("hourly_rate") or 0.0,
-                "cost_rate": i.get("cost_rate") or 0.0,
-                "resource_cost": i.get("resource_cost") or 0.0,
-                "billing_value": i.get("billing_value") or 0.0,
-                "resource_margin": i.get("resource_margin") or 0.0,
-                "assigned_email": i.get("assigned_email") or "unknown@arche.global",
-
-                "progress_pct": i.get("progress_pct", 0),
-                "remaining_hours": float(i.get("qty", 0)) * 4,
-                "deadline": i.get("end_date"),
-                "priority": i.get("priority", "MEDIUM"),
-                "start_date": i.get("start_date"),
-                "duration": i.get("duration", 0),
-                "work_mode": i.get("work_mode", "Days")
-            })
-
-        # Find the Project model to get the new fields
         proj_model = db.query(Project).filter(Project.name == p.project_name).first()
-        duration = proj_model.duration_months if proj_model else 0
-        target = proj_model.margin_target_pct if proj_model else 0
+        target_margin_pct = (proj_model.margin_target_pct or 0.0) if proj_model else 0.0
+        original_margin_pct = (proj_model.margin_pct_baseline or 0.0) if proj_model else 0.0
+        sell_value = proj_model.total_sell_price_with_gst if proj_model and (proj_model.total_sell_price_with_gst or 0) > 0 else ((proj_model.sale_value or 0.0) if proj_model else 0.0)
+        baseline_cost = (proj_model.total_cost_price or 0.0) if proj_model else 0.0
+        duration = (proj_model.duration_months or 0.0) if proj_model else 0.0
         
-        revenue = proj_model.sale_value if proj_model else 0
-        baseline_cost = proj_model.total_cost_baseline if proj_model else 0
+        total_planned_hours = 0.0
+        total_actual_hours = 0.0
+        total_implementation_cost = 0.0
+        total_forecasted_implementation_cost = 0.0
         
-        # Calculate actual project resource cost from assignments
-        actual_res_cost = sum(float(r.get("resource_cost") or 0.0) for r in project_resources)
-        actual_total_cost = baseline_cost + actual_res_cost
+        traffic_light = "Green" # Default
+
+        for idx, i in enumerate(items):
+            p_hrs = float(i.get("planned_hours", 0.0))
+            a_hrs = float(i.get("actual_hours", 0.0))
+            c_per_hr = float(i.get("cost_per_hour", 0.0))
+            r_cost = float(i.get("resource_cost", 0.0))
+            planned_r_cost = p_hrs * c_per_hr
+            
+            t_cost = float(i.get("travel_cost", 0.0))
+            f_cost = float(i.get("food_cost", 0.0))
+            s_cost = float(i.get("stay_cost", 0.0))
+            o_cost = float(i.get("other_cost", 0.0))
+            
+            item_total_actual_cost = r_cost + t_cost + f_cost + s_cost + o_cost
+            item_total_planned_cost = planned_r_cost + t_cost + f_cost + s_cost + o_cost
+            
+            total_planned_hours += p_hrs
+            total_actual_hours += a_hrs
+            total_implementation_cost += item_total_actual_cost
+            total_forecasted_implementation_cost += max(item_total_actual_cost, item_total_planned_cost)
+
+        current_total_cost = baseline_cost + total_implementation_cost
+        current_margin_amt = sell_value - current_total_cost
+        current_margin_pct = (current_margin_amt / sell_value * 100) if sell_value > 0 else 0.0
         
-        actual_margin_amt = revenue - actual_total_cost
-        actual_margin_pct = (actual_margin_amt / revenue * 100) if revenue > 0 else 0
-        deviation = actual_margin_pct - target
+        forecast_total_cost = baseline_cost + total_forecasted_implementation_cost
+        forecast_margin_amt = sell_value - forecast_total_cost
+        forecast_margin_pct = (forecast_margin_amt / sell_value * 100) if sell_value > 0 else 0.0
+        
+        hours_consumed_pct = (total_actual_hours / total_planned_hours * 100) if total_planned_hours > 0 else 0
+        
+        if total_actual_hours > total_planned_hours or current_margin_pct <= target_margin_pct:
+            traffic_light = "Red"
+        elif hours_consumed_pct > 50 and current_margin_pct < original_margin_pct:
+            traffic_light = "Orange"
 
         result.append({
             "id": p.id,
             "name": p.project_name,
-            "status": "ASSIGNED",
-            "efficiency_pct": 100.0,
-            "performance_score": 100.0,
-            "total_items": len(items),
-            "region": region,
-            "resources": project_resources,
-            "approved_by": p.approved_by,
-            "artifact_path": artifact_path,
-            "duration_months": duration,
-            "margin_target_pct": target,
-            "margin_deviation_pct": round(deviation, 2),
-            "total_revenue": revenue,
-            "margin_amount": round(actual_margin_amt, 2),
-            "margin_pct": round(actual_margin_pct, 2),
-            "actual_resource_cost": round(actual_res_cost, 2),
-            "actual_total_cost": round(actual_total_cost, 2),
+            "customer_name": project_info.get("customer_name") or "N/A",
+            "manager_name": p.assigned_manager_email.split('@')[0].capitalize(),
+            "duration": duration,
+            "status": traffic_light,
+            "kpis": {
+                "planned_hours": total_planned_hours,
+                "actual_hours": total_actual_hours,
+                "progress_pct": round(hours_consumed_pct, 1),
+                "target_margin_pct": round(target_margin_pct, 2),
+                "current_margin_pct": round(current_margin_pct, 2),
+                "forecast_margin_pct": round(forecast_margin_pct, 2),
+                "planned_cost": baseline_cost,
+                "actual_cost": current_total_cost
+            },
             "assigned_at": p.created_at.isoformat() if p.created_at else None
         })
     return result
 
 class TaskAssignmentInput(BaseModel):
     assigned_person: str
-    start_date: str
-    end_date: str
-    duration: float
-    priority: str = "MEDIUM"
-    work_mode: str = "Days"
-    booking_hours: Optional[float] = None
+    employee_id: str = None
+    start_date: str = None
+    planned_hours: float = 0.0
+    travel_cost: float = 0.0
+    food_cost: float = 0.0
+    stay_cost: float = 0.0
+    other_cost: float = 0.0
 
 @router.post("/projects/{project_id}/items/{item_id}/assign")
 def assign_item_task(
     project_id: int,
-    item_id: int,
+    item_id: str,
     assignment: TaskAssignmentInput,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_manager)
 ):
-    # Fetch ApprovedProject (Case-insensitive email matching)
     if current_user.role == "VP":
         project = db.query(ApprovedProject).filter(ApprovedProject.id == project_id).first()
     else:
@@ -177,95 +155,336 @@ def assign_item_task(
         ).first()
     
     if not project:
-        raise HTTPException(status_code=404, detail="Project command not found or unauthorized.")
+        raise HTTPException(status_code=404, detail="Project not found or unauthorized.")
 
-    items = project.full_excel_data or []
+    full_data = project.full_excel_data
+    items = full_data.get("project_costing", []) if isinstance(full_data, dict) else (full_data or [])
+    workforce = full_data.get("workforce_budget", []) if isinstance(full_data, dict) else []
+    
     updated = False
     
-    # Validation: Prevent duplicate resource allocation entries for the SAME node/item
-    # (Checking if this specific resource is already allocated to another node in the same project can be done if desired)
-    
     for idx, i in enumerate(items):
-        # Robust ID matching with index fallback
-        node_id = i.get("id") if i.get("id") is not None else (idx + 1)
+        node_id = i.get("id") if i.get("id") is not None else str(i.get("sap_id") or i.get("SAP Material ID", ""))
+        if not node_id:
+            node_id = str(idx)
         
-        if str(node_id) == str(item_id):
-            # central resource cost lookups
-            hourly_billing_rate = 0.0
-            cost_rate = 0.0
-            grade = "N/A"
-            role_practice = "N/A"
-            cost = 0.0
-            billing_value = 0.0
-            margin = 0.0
-            
+        if str(node_id) == str(item_id) or str(idx) == str(item_id):
             from app.models.resource import CentralizedResource
+            # Find grade from central resource
             res_obj = db.query(CentralizedResource).filter(
                 (CentralizedResource.name == assignment.assigned_person) | 
-                (CentralizedResource.email == assignment.assigned_person)
+                (CentralizedResource.employee_id == assignment.employee_id)
             ).first()
             
-            # Determine booking hours: PM's explicit entry, otherwise fallback to node baseline
-            if assignment.booking_hours is not None:
-                booked_hours = float(assignment.booking_hours)
-            else:
-                booked_hours = float(i.get("est_hours") or (float(i.get("qty", 0)) * 4))
+            grade = res_obj.grade if res_obj else "N/A"
+            cost_per_hour = 0.0
             
-            if res_obj:
-                hourly_billing_rate = res_obj.hourly_billing_rate
-                cost_rate = res_obj.cost_rate
-                grade = res_obj.grade
-                role_practice = res_obj.role_practice
-                
-                # Business Logic Formulas:
-                cost = booked_hours * cost_rate
-                billing_value = booked_hours * hourly_billing_rate
-                margin = billing_value - cost
-                
-                assignment_name = res_obj.name
-                assignment_email = res_obj.email
-                employee_id = res_obj.employee_id
-            else:
-                assignment_name = assignment.assigned_person
-                assignment_email = "unknown@arche.global"
-                employee_id = "N/A"
-                # fallback values
-                hourly_billing_rate = float(i.get("hourly_rate") or 0.0)
-                cost = booked_hours * hourly_billing_rate
-                billing_value = booked_hours * hourly_billing_rate
-                margin = 0.0
+            # Fetch cost from workforce budget
+            for wf in workforce:
+                if wf.get("Grade") == grade:
+                    cost_per_hour = float(wf.get("Manpower Cost/Hour", 0))
+                    break
+            
+            resource_cost = assignment.planned_hours * cost_per_hour
+            total_imp_cost = resource_cost + assignment.travel_cost + assignment.food_cost + assignment.stay_cost + assignment.other_cost
+            
+            # Intelligent End Date Calculation (9am - 5pm, 5 Days/Week)
+            from datetime import datetime, timedelta
+            
+            end_date_str = assignment.start_date
+            if assignment.planned_hours > 0:
+                try:
+                    s_date = datetime.strptime(assignment.start_date, "%Y-%m-%d")
+                    current_time = datetime.now()
+                    
+                    hours_remaining_today = 8.0
+                    if s_date.date() == current_time.date():
+                        curr_hour = current_time.hour + (current_time.minute / 60.0)
+                        if curr_hour < 9:
+                            hours_remaining_today = 8.0
+                        elif curr_hour >= 17:
+                            hours_remaining_today = 0.0
+                        else:
+                            hours_remaining_today = 17.0 - curr_hour
+                            
+                    if s_date.weekday() >= 5: # Weekend
+                        hours_remaining_today = 0.0
+                        
+                    rem_hrs = assignment.planned_hours
+                    curr_proc_date = s_date
+                    
+                    if rem_hrs <= hours_remaining_today:
+                        end_date_str = curr_proc_date.strftime("%Y-%m-%d")
+                    else:
+                        rem_hrs -= hours_remaining_today
+                        while rem_hrs > 0:
+                            curr_proc_date += timedelta(days=1)
+                            if curr_proc_date.weekday() < 5:
+                                if rem_hrs <= 8.0:
+                                    rem_hrs = 0
+                                else:
+                                    rem_hrs -= 8.0
+                        end_date_str = curr_proc_date.strftime("%Y-%m-%d")
+                except:
+                    pass
+            
+            planned_days = assignment.planned_hours / 8.0
             
             i.update({
-                "assigned_person": assignment_name,
-                "assigned_email": assignment_email,
-                "employee_id": employee_id,
+                "assigned_person": assignment.assigned_person,
+                "employee_id": res_obj.employee_id if res_obj else assignment.employee_id,
                 "grade": grade,
-                "role_practice": role_practice,
-                "hourly_billing_rate": hourly_billing_rate,
-                "cost_rate": cost_rate,
-                "est_hours": booked_hours,
-                "resource_cost": cost,
-                "billing_value": billing_value,
-                "resource_margin": margin,
                 "start_date": assignment.start_date,
-                "end_date": assignment.end_date,
-                "duration": assignment.duration,
-                "priority": assignment.priority,
-                "work_mode": assignment.work_mode,
-                "status": "In Progress",
-                "id": node_id
+                "end_date": end_date_str,
+                "planned_hours": assignment.planned_hours,
+                "actual_hours": i.get("actual_hours", 0.0),
+                "cost_per_hour": cost_per_hour,
+                "resource_cost": resource_cost,
+                "travel_cost": assignment.travel_cost,
+                "food_cost": assignment.food_cost,
+                "stay_cost": assignment.stay_cost,
+                "other_cost": assignment.other_cost,
+                "total_implementation_cost": total_imp_cost,
+                "planned_days": round(planned_days, 2),
+                "status": "Assigned"
             })
             updated = True
             break
-    
+            
     if not updated:
         raise HTTPException(status_code=404, detail="Mission node not found in project.")
 
     from sqlalchemy.orm.attributes import flag_modified
-    project.full_excel_data = items
+    if isinstance(project.full_excel_data, dict):
+        project.full_excel_data["project_costing"] = items
+    else:
+        project.full_excel_data = items
     flag_modified(project, "full_excel_data")
     db.commit()
     return {"status": "success", "message": "Resource allocated successfully"}
+
+class LogHoursInput(BaseModel):
+    date: str
+    hours: float
+    remarks: str = ""
+
+@router.post("/projects/{project_id}/items/{item_id}/log-hours")
+def log_item_hours(
+    project_id: int,
+    item_id: str,
+    log_data: LogHoursInput,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_manager)
+):
+    project = db.query(ApprovedProject).filter(ApprovedProject.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found.")
+
+    import copy
+    new_full_data = copy.deepcopy(project.full_excel_data)
+    items_to_update = new_full_data.get("project_costing", []) if isinstance(new_full_data, dict) else (new_full_data or [])
+    
+    updated = False
+    target_item = None
+    
+    for idx, i in enumerate(items_to_update):
+        node_id = i.get("id") if i.get("id") is not None else str(i.get("sap_id") or i.get("SAP Material ID", ""))
+        if not node_id:
+            node_id = str(idx)
+        
+        if str(node_id) == str(item_id) or str(idx) == str(item_id):
+            curr_actual = float(i.get("actual_hours", 0.0))
+            new_actual = curr_actual + log_data.hours
+            
+            cost_per_hour = float(i.get("cost_per_hour", 0.0))
+            new_res_cost = new_actual * cost_per_hour
+            
+            travel = float(i.get("travel_cost", 0.0))
+            food = float(i.get("food_cost", 0.0))
+            stay = float(i.get("stay_cost", 0.0))
+            other = float(i.get("other_cost", 0.0))
+            
+            total_imp_cost = new_res_cost + travel + food + stay + other
+            
+            i.update({
+                "actual_hours": new_actual,
+                "resource_cost": new_res_cost, # Note: using actuals for cost here to track live margins
+                "total_implementation_cost": total_imp_cost
+            })
+            updated = True
+            target_item = i
+            break
+            
+    if not updated:
+        raise HTTPException(status_code=404, detail="Mission node not found in project.")
+
+    from sqlalchemy.orm.attributes import flag_modified
+    if isinstance(new_full_data, dict):
+        new_full_data["project_costing"] = items_to_update
+    else:
+        new_full_data = items_to_update
+        
+    project.full_excel_data = new_full_data
+    flag_modified(project, "full_excel_data")
+    db.commit()
+    
+    # Calculate Project Level Totals for Escalation
+    proj_model = db.query(Project).filter(Project.name == project.project_name).first()
+
+    # Also log to timelogs table for history
+    from app.models.timelog import TimeLog
+    new_log = TimeLog(
+        project_id=proj_model.id if proj_model else None,
+        node_id=str(item_id),
+        user_id=current_user.id,
+        hours=log_data.hours,
+        remarks=log_data.remarks
+    )
+    db.add(new_log)
+    db.commit()
+    
+    target_margin_pct = (proj_model.margin_target_pct or 0.0) if proj_model else 0.0
+    sell_value = proj_model.total_sell_price_with_gst if proj_model and (proj_model.total_sell_price_with_gst or 0) > 0 else ((proj_model.sale_value or 0.0) if proj_model else 0.0)
+    baseline_cost = (proj_model.total_cost_price or 0.0) if proj_model else 0.0
+    
+    total_planned_hours = 0.0
+    total_actual_hours = 0.0
+    total_implementation_cost = 0.0
+    total_forecasted_implementation_cost = 0.0
+
+    for i in items:
+        p_hrs = float(i.get("planned_hours", 0.0))
+        a_hrs = float(i.get("actual_hours", 0.0))
+        c_per_hr = float(i.get("cost_per_hour", 0.0))
+        r_cost = float(i.get("resource_cost", 0.0))
+        planned_r_cost = p_hrs * c_per_hr
+        
+        t_cost = float(i.get("travel_cost", 0.0))
+        f_cost = float(i.get("food_cost", 0.0))
+        s_cost = float(i.get("stay_cost", 0.0))
+        o_cost = float(i.get("other_cost", 0.0))
+        
+        item_total_actual_cost = r_cost + t_cost + f_cost + s_cost + o_cost
+        item_total_planned_cost = planned_r_cost + t_cost + f_cost + s_cost + o_cost
+        
+        total_planned_hours += p_hrs
+        total_actual_hours += a_hrs
+        total_implementation_cost += item_total_actual_cost
+        total_forecasted_implementation_cost += max(item_total_actual_cost, item_total_planned_cost)
+
+    current_total_cost = baseline_cost + total_implementation_cost
+    current_margin_amt = sell_value - current_total_cost
+    current_margin_pct = (current_margin_amt / sell_value * 100) if sell_value > 0 else 0.0
+    
+    forecast_total_cost = baseline_cost + total_forecasted_implementation_cost
+    forecast_margin_amt = sell_value - forecast_total_cost
+    forecast_margin_pct = (forecast_margin_amt / sell_value * 100) if sell_value > 0 else 0.0
+    
+    trigger_reason = None
+    if current_margin_pct < target_margin_pct:
+        trigger_reason = f"Current Margin ({current_margin_pct:.1f}%) dropped below Target ({target_margin_pct:.1f}%)"
+    elif forecast_margin_pct < target_margin_pct:
+        trigger_reason = f"Forecast Margin ({forecast_margin_pct:.1f}%) projected below Target ({target_margin_pct:.1f}%)"
+    elif total_planned_hours > 0 and total_actual_hours > (total_planned_hours * 1.10):
+        trigger_reason = f"Hours Variance exceeded 10% (Actual: {total_actual_hours}, Planned: {total_planned_hours})"
+    
+    if trigger_reason:
+        from app.models.requests import MarginEscalation
+        from app.models.workflow import InAppNotification
+        # Check if already open
+        existing = db.query(MarginEscalation).filter(MarginEscalation.project_id == project_id, MarginEscalation.status == "OPEN").first()
+        if not existing:
+            new_esc = MarginEscalation(
+                project_id=project_id,
+                target_margin=target_margin_pct,
+                current_margin=current_margin_pct,
+                forecast_margin=forecast_margin_pct,
+                trigger_reason=trigger_reason,
+                status="OPEN",
+                escalated_to=project.approved_by or "vp@arche.global"
+            )
+            db.add(new_esc)
+            
+            new_notif = InAppNotification(
+                recipient_email=project.approved_by or "vp@arche.global",
+                priority="CRITICAL",
+                type="ESCALATION",
+                title=f"Margin Escalation: {project.project_name}",
+                message=trigger_reason
+            )
+            db.add(new_notif)
+            
+            # Notifying PM softly
+            new_notif_pm = InAppNotification(
+                recipient_email=project.assigned_manager_email,
+                priority="WARNING",
+                type="MARGIN",
+                title=f"Warning: Margin Risk on {project.project_name}",
+                message=trigger_reason
+            )
+            db.add(new_notif_pm)
+            
+            db.commit()
+
+    # Intelligence Feed Generation
+    from app.models.intelligence import IntelligenceEvent
+    
+    # 1. Standard Hours Event
+    p_hrs = float(target_item.get('planned_hours', 1) or 1)
+    a_hrs = float(target_item.get('actual_hours', 0))
+    util_pct = round((a_hrs / p_hrs) * 100, 1)
+    
+    intel_hrs = IntelligenceEvent(
+        project_id=project.id,
+        project_name=project.project_name,
+        sap_node_id=item_id,
+        sap_node_name=target_item.get("description") or target_item.get("Description", "Unknown Node"),
+        category="HOURS",
+        priority="INFO",
+        message=f"{log_data.hours} Hours logged by {target_item.get('assigned_person', 'Resource')}." + (f" ({log_data.remarks})" if log_data.remarks else ""),
+        metrics={
+            "Actual / Planned": f"{a_hrs} / {target_item.get('planned_hours', 0)} Hrs",
+            "Utilization": f"{util_pct}%"
+        }
+    )
+    db.add(intel_hrs)
+    
+    # 2. Margin Event
+    if trigger_reason:
+        priority = "CRITICAL" if "exceeded" in trigger_reason else "WARNING"
+        intel_margin = IntelligenceEvent(
+            project_id=project.id,
+            project_name=project.project_name,
+            sap_node_id=item_id,
+            category="MARGIN",
+            priority=priority,
+            message=trigger_reason,
+            metrics={
+                "Target Margin": f"{target_margin_pct:.1f}%",
+                "Current Margin": f"{current_margin_pct:.1f}%",
+                "Forecast Margin": f"{forecast_margin_pct:.1f}%"
+            }
+        )
+        db.add(intel_margin)
+    elif current_margin_pct >= target_margin_pct and total_actual_hours > 0:
+        intel_margin = IntelligenceEvent(
+            project_id=project.id,
+            project_name=project.project_name,
+            sap_node_id=item_id,
+            category="MARGIN",
+            priority="SUCCESS",
+            message="Project operating above approved margin threshold.",
+            metrics={
+                "Target Margin": f"{target_margin_pct:.1f}%",
+                "Current Margin": f"{current_margin_pct:.1f}%",
+                "Forecast Margin": f"{forecast_margin_pct:.1f}%"
+            }
+        )
+        db.add(intel_margin)
+        
+    db.commit()
+
+    return {"status": "success", "message": "Hours logged successfully"}
 
 
 @router.get("/all-resources")
@@ -284,7 +503,7 @@ def get_all_manager_resources(
     resource_map = {} # email -> resource info
     
     for p in projects:
-        items = p.full_excel_data or []
+        items = p.full_excel_data.get("project_costing", []) if isinstance(p.full_excel_data, dict) else (p.full_excel_data or [])
         for i in items:
             person = i.get("assigned_person")
             if not person or person == "Unassigned": continue
@@ -380,7 +599,7 @@ def get_project_detail(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_manager)
 ):
-    if current_user.role == "VP":
+    if current_user.role == "VP" or current_user.role == "PC":
         project = db.query(ApprovedProject).filter(ApprovedProject.id == project_id).first()
     else:
         project = db.query(ApprovedProject).filter(
@@ -391,9 +610,9 @@ def get_project_detail(
     if not project:
         raise HTTPException(status_code=404, detail="Project not found or not assigned to you.")
 
-    items = project.full_excel_data or []
-    if region != "GLOBAL":
-        items = [i for i in items if str(i.get("region", "GLOBAL")).upper() == region.upper()]
+    full_data = project.full_excel_data
+    items = full_data.get("project_costing", []) if isinstance(full_data, dict) else (full_data or [])
+    project_info = full_data.get("project_info", {}) if isinstance(full_data, dict) else {}
 
     ma = db.query(MissionAssignment).filter(
         MissionAssignment.mission_name == project.project_name,
@@ -401,85 +620,139 @@ def get_project_detail(
     ).first()
     artifact_path = ma.artifact_path if ma else None
 
+    # Fetch DB Project for base financials
+    proj_model = db.query(Project).filter(Project.name == project.project_name).first()
+    target_margin_pct = (proj_model.margin_target_pct or 0.0) if proj_model else 0.0
+    original_margin_pct = (proj_model.margin_pct_baseline or 0.0) if proj_model else 0.0
+    sell_value = proj_model.total_sell_price_with_gst if proj_model and (proj_model.total_sell_price_with_gst or 0) > 0 else ((proj_model.sale_value or 0.0) if proj_model else 0.0)
+    baseline_cost = (proj_model.total_cost_price or 0.0) if proj_model else 0.0
+
     resource_data = []
+    
+    total_planned_hours = 0.0
+    total_actual_hours = 0.0
+    total_implementation_cost = 0.0
+    total_forecasted_implementation_cost = 0.0
+    
+    traffic_light = "Green" # Default
+
     for idx, i in enumerate(items):
-        # Fallback to index+1 if ID is missing
-        node_id = i.get("id") if i.get("id") is not None else (idx + 1)
+        node_id = i.get("id") if i.get("id") is not None else str(i.get("sap_id") or i.get("SAP Material ID", ""))
+        if not node_id:
+            node_id = str(idx)
+        
+        p_hrs = float(i.get("planned_hours", 0.0))
+        a_hrs = float(i.get("actual_hours", 0.0))
+        c_per_hr = float(i.get("cost_per_hour", 0.0))
+        r_cost = float(i.get("resource_cost", 0.0)) # this is actual cost currently
+        
+        planned_r_cost = p_hrs * c_per_hr
+        
+        t_cost = float(i.get("travel_cost", 0.0))
+        f_cost = float(i.get("food_cost", 0.0))
+        s_cost = float(i.get("stay_cost", 0.0))
+        o_cost = float(i.get("other_cost", 0.0))
+        
+        item_total_actual_cost = r_cost + t_cost + f_cost + s_cost + o_cost
+        item_total_planned_cost = planned_r_cost + t_cost + f_cost + s_cost + o_cost
+        
+        total_planned_hours += p_hrs
+        total_actual_hours += a_hrs
+        total_implementation_cost += item_total_actual_cost
+        
+        # Forecast cost: if actual > planned, use actual, else use planned
+        total_forecasted_implementation_cost += max(item_total_actual_cost, item_total_planned_cost)
+        
+        utilization = (a_hrs / p_hrs * 100) if p_hrs > 0 else 0
         
         resource_data.append({
             "id": node_id,
-            "sap_id": i.get("sap_id"),
-            "task_name": i.get("description") or "N/A",
-            "role": i.get("practice") or i.get("sbu") or "Mission Resource",
-            "component": i.get("component"),
-            "item_type": i.get("item_type"),
-            "sales_region": i.get("sales_region"),
-            "oem": i.get("oem"),
-            "qty": i.get("qty", 0),
-            "purchase_total": i.get("purchase_total", 0),
-            "selling_total": i.get("selling_total", 0),
-            "net_value": i.get("net_value", 0),
-            "margin_pct": i.get("margin_pct", 0),
-            "gm_pct": i.get("margin_pct", 0),
-            "margin": f"{i.get('margin_pct', 0)}%",
-            "est_hours": i.get("est_hours", 0),
-            "status": i.get("status", "Pending"),
+            "sap_id": i.get("sap_id") or i.get("SAP Material ID") or i.get("Sl.No"),
+            "task_name": i.get("description") or i.get("Description") or "N/A",
             "name": i.get("assigned_person") or "Unassigned",
-            
-            # Centralized Pool Fields
             "employee_id": i.get("employee_id") or "N/A",
             "grade": i.get("grade") or "N/A",
-            "role_practice": i.get("role_practice") or "N/A",
-            "hourly_billing_rate": i.get("hourly_billing_rate") or i.get("hourly_rate") or 0.0,
-            "cost_rate": i.get("cost_rate") or 0.0,
-            "resource_cost": i.get("resource_cost") or 0.0,
-            "billing_value": i.get("billing_value") or 0.0,
-            "resource_margin": i.get("resource_margin") or 0.0,
-            "assigned_email": i.get("assigned_email") or "unknown@arche.global",
-
-            "progress_pct": i.get("progress_pct", 0),
-            "remaining_hours": i.get("remaining_hours", float(i.get("qty", 0)) * 4),
-            "deadline": i.get("end_date"),
-            "priority": i.get("priority", "MEDIUM"),
+            "planned_hours": p_hrs,
+            "actual_hours": a_hrs,
+            "remaining_hours": max(0, p_hrs - a_hrs),
+            "utilization": round(utilization, 2),
+            "cost_per_hour": c_per_hr,
+            "resource_cost": r_cost,
+            "total_implementation_cost": item_total_actual_cost,
+            "planned_days": i.get("planned_days", 0),
             "start_date": i.get("start_date"),
-            "duration": i.get("duration", 0),
-            "work_mode": i.get("work_mode", "Days")
+            "end_date": i.get("end_date"),
+            "status": i.get("status", "Pending")
         })
 
-    # Find the Project model to get the new fields
-    proj_model = db.query(Project).filter(Project.name == project.project_name).first()
-    duration = proj_model.duration_months if proj_model else 0
-    target = proj_model.margin_target_pct if proj_model else 0
+    # Calculations
+    current_total_cost = baseline_cost + total_implementation_cost
+    current_margin_amt = sell_value - current_total_cost
+    current_margin_pct = (current_margin_amt / sell_value * 100) if sell_value > 0 else 0.0
     
-    revenue = proj_model.sale_value if proj_model else 0
-    baseline_cost = proj_model.total_cost_baseline if proj_model else 0
+    forecast_total_cost = baseline_cost + total_forecasted_implementation_cost
+    forecast_margin_amt = sell_value - forecast_total_cost
+    forecast_margin_pct = (forecast_margin_amt / sell_value * 100) if sell_value > 0 else 0.0
     
-    actual_res_cost = sum(float(r.get("resource_cost") or 0.0) for r in resource_data)
-    actual_total_cost = baseline_cost + actual_res_cost
+    margin_variance = current_margin_pct - target_margin_pct
     
-    actual_margin_amt = revenue - actual_total_cost
-    actual_margin_pct = (actual_margin_amt / revenue * 100) if revenue > 0 else 0
-    deviation = actual_margin_pct - target
+    hours_variance = total_actual_hours - total_planned_hours
+    hours_consumed_pct = (total_actual_hours / total_planned_hours * 100) if total_planned_hours > 0 else 0
+    
+    # Traffic Light Logic
+    if total_actual_hours > total_planned_hours or current_margin_pct <= target_margin_pct:
+        traffic_light = "Red"
+    elif hours_consumed_pct > 50 and current_margin_pct < original_margin_pct:
+        traffic_light = "Orange"
+
+    kpis = {
+        "planned_hours": total_planned_hours,
+        "actual_hours": total_actual_hours,
+        "hours_variance": hours_variance,
+        "planned_cost": baseline_cost + sum(r["planned_hours"] * r["cost_per_hour"] for r in resource_data),
+        "actual_cost": current_total_cost,
+        "cost_variance": current_total_cost - (baseline_cost + sum(r["planned_hours"] * r["cost_per_hour"] for r in resource_data)),
+        "target_margin_pct": target_margin_pct,
+        "current_margin_pct": current_margin_pct,
+        "forecast_margin_pct": forecast_margin_pct,
+        "margin_variance": margin_variance,
+        "traffic_light": traffic_light,
+        "total_revenue": sell_value,
+        "duration_months": proj_model.duration_months if proj_model else 0
+    }
 
     return {
         "id": project.id,
         "name": project.project_name,
         "resources": resource_data,
-        "efficiency_pct": 100.0,
-        "task_progress": 0,
-        "status": "Good",
+        "kpis": kpis,
+        "status": traffic_light,
         "approved_by": project.approved_by,
         "created_at": project.created_at.isoformat() if project.created_at else None,
         "artifact_path": artifact_path,
-        "duration_months": duration,
-        "margin_target_pct": target,
-        "margin_deviation_pct": round(deviation, 2),
-        "total_revenue": revenue,
-        "margin_amount": round(actual_margin_amt, 2),
-        "margin_pct": round(actual_margin_pct, 2),
-        "actual_resource_cost": round(actual_res_cost, 2),
-        "actual_total_cost": round(actual_total_cost, 2),
         "assigned_at": project.created_at.isoformat() if project.created_at else None
+    }
+
+@router.get("/projects/{project_id}/approved-data")
+def get_project_approved_data(
+    project_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_manager)
+):
+    if current_user.role == "VP":
+        project = db.query(ApprovedProject).filter(ApprovedProject.id == project_id).first()
+    else:
+        project = db.query(ApprovedProject).filter(
+            ApprovedProject.id == project_id,
+            func.lower(ApprovedProject.assigned_manager_email) == current_user.email.lower()
+        ).first()
+    
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    return {
+        "id": project.id,
+        "full_excel_data": project.full_excel_data
     }
 
 @router.get("/projects/{project_id}/resources")
@@ -720,8 +993,11 @@ def get_centralized_resources(db: Session = Depends(get_db), current_user: User 
     projects = db.query(ApprovedProject).all()
     booking_map = {}
     for p in projects:
-        items = p.full_excel_data or []
+        raw = p.full_excel_data or []
+        items = raw.get("project_costing", []) if isinstance(raw, dict) else raw
         for item in items:
+            if not isinstance(item, dict):
+                continue
             person = item.get("assigned_person")
             if person and person != "Unassigned":
                 hours = float(item.get("est_hours") or (float(item.get("qty", 0)) * 4))

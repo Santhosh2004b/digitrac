@@ -5,6 +5,7 @@ from datetime import datetime
 
 class WorkflowInstance(Base):
     __tablename__ = "workflow_instances"
+    __table_args__ = {"extend_existing": True}
 
     id = Column(Integer, primary_key=True, index=True)
     type = Column(String, nullable=False)  # PROJECT_APPROVAL, BUDGET_APPROVAL, RESOURCE_ALLOCATION, ESCALATION, FINANCE_VALIDATION, CHANGE_REQUEST
@@ -26,6 +27,7 @@ class WorkflowInstance(Base):
 
 class WorkflowStep(Base):
     __tablename__ = "workflow_steps"
+    __table_args__ = {"extend_existing": True}
 
     id = Column(Integer, primary_key=True, index=True)
     workflow_instance_id = Column(Integer, ForeignKey("workflow_instances.id", ondelete="CASCADE"), nullable=False)
@@ -41,6 +43,7 @@ class WorkflowStep(Base):
 
 class InAppNotification(Base):
     __tablename__ = "in_app_notifications"
+    __table_args__ = {"extend_existing": True}
 
     id = Column(Integer, primary_key=True, index=True)
     recipient_email = Column(String, nullable=False)
@@ -53,6 +56,7 @@ class InAppNotification(Base):
 
 class ProjectMilestone(Base):
     __tablename__ = "project_milestones"
+    __table_args__ = {"extend_existing": True}
 
     id = Column(Integer, primary_key=True, index=True)
     project_id = Column(Integer, nullable=False)

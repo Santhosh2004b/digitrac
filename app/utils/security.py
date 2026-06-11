@@ -5,10 +5,20 @@ from jose import jwt
 from app.config import settings
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    try:
-        return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
-    except Exception:
-        return False
+    """Verify a password against the stored hash.
+
+    For legacy accounts that may have a plain‑text password (no bcrypt prefix),
+    fall back to a simple equality check. This keeps existing users working while
+    still using bcrypt for newly created accounts.
+    """
+    # bcrypt hashes start with $2b$ or $2a$
+    if hashed_password.startswith("$2"):
+        try:
+            return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+        except Exception:
+            return False
+    # Legacy plain‑text password
+    return plain_password == hashed_password
 
 def get_password_hash(password: str) -> str:
     pwd_bytes = password.encode('utf-8')

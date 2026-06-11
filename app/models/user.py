@@ -4,9 +4,8 @@ import enum
 from app.db.session import Base
 
 class UserRole(str, enum.Enum):
-    VP = "VP"
-    MANAGER = "MNG"
-    EMPLOYEE = "EMP"
+    COORDINATOR = "PC"
+    MANAGER = "PM"
 
 class User(Base):
     __tablename__ = "users"
@@ -15,7 +14,7 @@ class User(Base):
     name = Column(String, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)
     password = Column(String, nullable=False)
-    role = Column(String, nullable=False)  # VP, MNG, or EMP
+    role = Column(String, nullable=False)  # PC or PM
     salary = Column(Integer, nullable=True) # Monthly salary
     department = Column(String, nullable=True)
     is_setup_complete = Column(Integer, default=0) # 0: New, 1: Setup Complete

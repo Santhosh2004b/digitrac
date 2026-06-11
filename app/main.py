@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.db.session import engine, Base
-from app.models import user, project, task, timelog, resource, governance, workflow, saas
-from app.routes import auth, manager, employee, dashboard, excel, vp, intelligence, workflows, predictive, saas
+from app.models import user, project, task, timelog, resource, governance, workflow, saas, intelligence
+from app.routes import auth, manager, employee, dashboard, excel, vp, intelligence, workflows, predictive, saas, notifications, workflow, ai
 from app.config import settings
 
 # Create database tables
@@ -15,8 +15,33 @@ from app.utils.resilience import ObservabilityMiddleware, db_circuit_breaker
 from sqlalchemy.sql import text
 import traceback
 import sys
+import asyncio
+import os
 
 app = FastAPI(title=settings.PROJECT_NAME)
+
+@app.on_event("startup")
+async def startup_event():
+    # Integrate deadline monitor to run daily in the background
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+    try:
+        from backend.deadline_monitor import check_deadlines
+        
+        async def run_daily():
+            while True:
+                try:
+                    await check_deadlines()
+                except Exception as e:
+                    print(f"Error in daily deadline monitor: {e}")
+                
+                # Sleep for 24 hours (86400 seconds)
+                await asyncio.sleep(86400)
+
+        # Launch background task
+        asyncio.create_task(run_daily())
+        print("Daily Background Deadline Monitor initialized.")
+    except Exception as e:
+        print(f"Failed to initialize deadline monitor: {e}")
 
 app.add_middleware(ObservabilityMiddleware)
 
@@ -60,10 +85,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-    ],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=[
@@ -88,6 +110,9 @@ app.include_router(intelligence.router)
 app.include_router(workflows.router)
 app.include_router(predictive.router)
 app.include_router(saas.router)
+app.include_router(notifications.router)
+app.include_router(workflow.router)
+app.include_router(ai.router)
 
 @app.get("/")
 def read_root():

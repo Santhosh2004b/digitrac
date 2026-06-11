@@ -1,55 +1,310 @@
 "use client";
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import './vp.css';
 
-const Icons = {
-  Overview: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>,
-  Cube: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>,
-  Users: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>,
-  Check: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>,
-  Lightning: () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>,
-  CheckSquare: () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><polyline points="9 11 12 14 22 4"></polyline></svg>,
-  Clock: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+const API = 'http://127.0.0.1:8000';
+const tok = () => {
+    if (typeof window !== 'undefined') return localStorage.getItem('token');
+    return null;
 };
 
-export default function VPDashboard() {
+const Icons = {
+  Folder: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>,
+
+  Overview: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>,
+  Cube: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>,
+  Check: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>,
+  CheckSquare: () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><polyline points="9 11 12 14 22 4"></polyline></svg>,
+  Logout: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
+  Bell: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>,
+  Bot: () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
+};
+
+const TypewriterText = ({ text, delay = 15 }) => {
+  const [displayedText, setDisplayedText] = useState("");
+  
+  useEffect(() => {
+    setDisplayedText("");
+    let i = 0;
+    const interval = setInterval(() => {
+      setDisplayedText(text.slice(0, i + 1));
+      i++;
+      if (i >= text.length) clearInterval(interval);
+    }, delay);
+    return () => clearInterval(interval);
+  }, [text, delay]);
+
+  return <>{displayedText}</>;
+};
+
+export default function CoordinatorDashboard() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState('DEPLOYMENT');
-  const [selectedMission, setSelectedMission] = useState('sample(Sheet1)'); // Toggle between null and 'sample(Sheet1)'
-  const [deploymentStep, setDeploymentStep] = useState(3);
+  const [activeTab, setActiveTab] = useState('OVERVIEW');
+  const [step, setStep] = useState(1);
+  const [assignmentHistory, setAssignmentHistory] = useState([]);
+  const [assignmentTab, setAssignmentTab] = useState('NEW');
+  const [step3Page, setStep3Page] = useState(1);
+  const [previewHtml, setPreviewHtml] = useState({});
+  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+  
+  const showToast = (message, type = 'success') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast(t => ({ ...t, show: false })), 4000);
+  };
+  
+  // State
+  const [managerEmail, setManagerEmail] = useState('');
+  const [managerValidated, setManagerValidated] = useState(false);
+  const [managerName, setManagerName] = useState('');
+  
+  const [file, setFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  
+  const [parsedData, setParsedData] = useState(null);
+  const [assigning, setAssigning] = useState(false);
+
+  const [portfolio, setPortfolio] = useState([]);
+  const [portfolioFilter, setPortfolioFilter] = useState('ALL');
+  const [portfolioPage, setPortfolioPage] = useState(1);
+
+  const [requests, setRequests] = useState([]);
+  const [escalations, setEscalations] = useState([]);
+  
+  
+  const [feed, setFeed] = useState([]);
+  const [feedFilter, setFeedFilter] = useState('');
+  
+  const [isChatOpen, setIsChatOpen] = useState(true);
+  const [chatMessages, setChatMessages] = useState([
+    { role: 'ai', content: 'Hello Commander! I am your strategic AI assistant. Select a question below to analyze the portfolio:' }
+  ]);
+  const [isChatLoading, setIsChatLoading] = useState(false);
+  const [chatInput, setChatInput] = useState('');
+  
+  const messagesEndRef = useRef(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages, isChatLoading]);
+  
+  const suggestedQuestions = [
+    "What is the overall portfolio health and total enterprise burn?",
+    "Which projects are currently operating below their target margin?",
+    "Show me the highest performing project by margin.",
+    "Are there any critical governance escalations?",
+    "Summarize the total planned vs actual cost across all projects.",
+    "Which projects have the largest margin deviation?",
+    "Show me all critical (Red) projects.",
+    "What is the total implementation cost across the portfolio?"
+  ];
+
+  const handleChatQuestion = async (question) => {
+    setChatMessages(prev => [...prev, { role: 'user', content: question }]);
+    setIsChatLoading(true);
+    try {
+      const res = await fetch(`${API}/ai/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok()}` },
+        body: JSON.stringify({ question })
+      });
+      const data = await res.json();
+      setChatMessages(prev => [...prev, { role: 'ai', content: data.answer || data.detail || 'Error connecting to intelligence feed.' }]);
+    } catch (e) {
+      setChatMessages(prev => [...prev, { role: 'ai', content: 'Connection to AI framework failed.' }]);
+    } finally {
+      setIsChatLoading(false);
+    }
+  };
+
+  const handleCustomSubmit = (e) => {
+    e.preventDefault();
+    if (!chatInput.trim()) return;
+    const q = chatInput.trim();
+    setChatInput('');
+    handleChatQuestion(q);
+  };
+  
+  useEffect(() => {
+    if (activeTab === 'INTELLIGENCE') {
+        const url = feedFilter ? `${API}/intelligence/feed?category=${feedFilter}` : `${API}/intelligence/feed`;
+        fetch(url, { headers: { Authorization: `Bearer ${tok()}` } })
+            .then(res => res.json())
+            .then(data => { if (Array.isArray(data)) setFeed(data); })
+            .catch(console.error);
+    }
+  }, [activeTab, feedFilter]);
+
+  useEffect(() => {
+    if (activeTab === 'APPROVALS') {
+        fetch(`${API}/workflow/requests`, { headers: { Authorization: `Bearer ${tok()}` } })
+            .then(res => res.json())
+            .then(data => { if (Array.isArray(data)) setRequests(data); })
+            .catch(console.error);
+        fetch(`${API}/workflow/escalations`, { headers: { Authorization: `Bearer ${tok()}` } })
+            .then(res => res.json())
+            .then(data => { if (Array.isArray(data)) setEscalations(data); })
+            .catch(console.error);
+    }
+  }, [activeTab]);
+
+  const handleRequestAction = async (id, action) => {
+      const comments = prompt(`Enter comments for ${action}:`);
+      if (comments === null) return;
+      try {
+          await fetch(`${API}/workflow/requests/${id}/action`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok()}` },
+              body: JSON.stringify({ action, comments })
+          });
+          // Refresh
+          const res = await fetch(`${API}/workflow/requests`, { headers: { Authorization: `Bearer ${tok()}` } });
+          const d = await res.json(); if(Array.isArray(d)) setRequests(d);
+      } catch (e) {
+          showToast('Action failed', 'error');
+      }
+  };
+
+
+
+
+  useEffect(() => {
+    if (activeTab === 'OVERVIEW') {
+        fetch(`${API}/manager/projects`, { headers: { Authorization: `Bearer ${tok()}` } })
+            .then(res => res.json())
+            .then(data => { if (Array.isArray(data)) setPortfolio(data); })
+            .catch(console.error);
+    }
+  }, [activeTab]);
+
+  const validateManager = async () => {
+    if (!managerEmail) return;
+    try {
+      const res = await fetch(`${API}/excel/validate-manager`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok()}` },
+        body: JSON.stringify({ email: managerEmail })
+      });
+      if (res.ok) {
+        setManagerValidated(true);
+        setManagerName(managerEmail.split('@')[0].toUpperCase());
+      } else {
+        showToast("Invalid PM Email. Must be @arche.global", "error");
+      }
+    } catch (e) {
+      showToast("Error validating manager", "error");
+    }
+  };
+
+  const handleFileUpload = async (e) => {
+    const selectedFile = e.target.files[0];
+    if (!selectedFile) return;
+    setFile(selectedFile);
+    setUploading(true);
+    
+    const formData = new FormData();
+    formData.append("file", selectedFile);
+    
+    try {
+      const res = await fetch(`${API}/excel/upload`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${tok()}` },
+        body: formData
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setParsedData(data);
+        
+        try {
+          const previewRes = await fetch(`${API}/excel/preview-mail`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok()}` },
+            body: JSON.stringify({
+              manager_email: managerEmail,
+              project_name: data.summary.project_name || "Unknown Project",
+              summary: data.summary,
+              project_costing: data.project_costing,
+              workforce_budget: data.workforce_budget
+            })
+          });
+          if (previewRes.ok) {
+            const previewData = await previewRes.json();
+            setPreviewHtml(previewData);
+          }
+        } catch (e) { console.error("Preview error", e); }
+        
+        setStep(3);
+        setStep3Page(1);
+      } else {
+        const err = await res.json();
+        showToast(err.detail || "Failed to parse Excel", "error");
+      }
+    } catch (error) {
+      showToast("Upload error", "error");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleAssignProject = async () => {
+    if (!parsedData || !managerValidated) return;
+    setAssigning(true);
+    try {
+      const res = await fetch(`${API}/excel/approve-assign`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok()}` },
+        body: JSON.stringify({
+          manager_email: managerEmail,
+          project_name: parsedData.summary.project_name || "Unknown Project",
+          summary: parsedData.summary,
+          project_costing: parsedData.project_costing,
+          workforce_budget: parsedData.workforce_budget
+        })
+      });
+      if (res.ok) {
+        showToast("Project assigned successfully to PM!", "success");
+        // Reset
+        setStep(1);
+        setManagerEmail('');
+        setManagerValidated(false);
+        setFile(null);
+        setParsedData(null);
+        setActiveTab('OVERVIEW');
+      } else {
+        showToast("Failed to assign project.", "error");
+      }
+    } catch (e) {
+      showToast("Assignment error", "error");
+    } finally {
+      setAssigning(false);
+    }
+  };
 
   const navItems = [
-    { id: 'OVERVIEW', label: 'OVERVIEW', sub: '72 ACTIVE', icon: <Icons.Overview /> },
-    { id: 'PROJECT_INTELLIGENCE', label: 'PROJECT INTELLIGENCE', sub: 'DEEP DRILL', icon: <Icons.Cube /> },
-    { id: 'RESOURCE_INTELLIGENCE', label: 'RESOURCE INTELLIGENCE', sub: '92% LOAD', icon: <Icons.Users /> },
-    { id: 'DEPLOYMENT', label: 'DEPLOYMENT', sub: 'NEW MISSION', icon: <Icons.Check /> }
+    { id: 'OVERVIEW', label: 'PORTFOLIO OVERVIEW', sub: 'ALL PROJECTS', icon: <Icons.Overview /> },
+    { id: 'APPROVALS', label: 'GOVERNANCE', sub: 'APPROVALS & ALERTS', icon: <Icons.Folder /> }
   ];
 
   return (
-    <div className="vp-dashboard" style={{ background: '#0a0b10', minHeight: '100vh', display: 'flex', color: '#fff', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ background: '#f8fafc', minHeight: '100vh', display: 'flex', color: '#1e293b', fontFamily: 'Inter, sans-serif' }}>
       
       {/* SIDEBAR */}
-      <div className="vp-sidebar" style={{ width: '220px', background: '#050608', borderRight: '1px solid rgba(255,255,255,0.05)', padding: '1.5rem 0.5rem', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '1.25rem', marginTop: '1rem' }}>
+      <div style={{ width: '250px', background: '#ffffff', borderRight: '1px solid #e2e8f0', padding: '1.5rem 0.5rem', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '2rem', marginTop: '1rem' }}>
           <div style={{ 
             fontSize: '1.5rem', 
             fontWeight: 900, 
-            fontFamily: 'Arial Black, system-ui, -apple-system, sans-serif',
-            background: 'linear-gradient(180deg, #ffffff 0%, #9ba3af 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
+            color: '#0f172a',
             letterSpacing: '-0.04em',
-            marginBottom: '0.25rem',
-            lineHeight: 1
+            marginBottom: '0.25rem'
           }}>
             DigiTrac
           </div>
-          <div style={{ fontSize: '0.65rem', fontWeight: 900, letterSpacing: '0.2em', color: '#3b82f6' }}>STRATEGIC COMMAND</div>
+          <div style={{ fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.1em', color: '#64748b' }}>PROJECT COORDINATOR</div>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           {navItems.map(item => (
             <div 
               key={item.id} 
@@ -57,731 +312,970 @@ export default function VPDashboard() {
               style={{
                 display: 'flex',
                 alignItems: 'flex-start',
-                padding: '0.6rem',
-                borderLeft: activeTab === item.id ? '3px solid #3b82f6' : '3px solid rgba(0,0,0,0)',
-                background: activeTab === item.id ? 'linear-gradient(90deg, rgba(59, 130, 246, 0.1), rgba(0,0,0,0))' : 'rgba(0,0,0,0)',
+                padding: '0.75rem',
+                borderLeft: activeTab === item.id ? '3px solid #2563eb' : '3px solid transparent',
+                background: activeTab === item.id ? '#eff6ff' : 'transparent',
                 borderRadius: '0 8px 8px 0',
                 margin: '0 1rem 0 0',
                 cursor: 'pointer'
               }}
             >
-              <div style={{ color: activeTab === item.id ? '#fff' : '#8896ab', marginTop: '2px', marginRight: '1rem' }}>
+              <div style={{ color: activeTab === item.id ? '#2563eb' : '#64748b', marginTop: '2px', marginRight: '0.75rem' }}>
                 {item.icon}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: '0.75rem', fontWeight: 800, color: activeTab === item.id ? '#fff' : '#8896ab', letterSpacing: '0.05em' }}>{item.label}</span>
-                <span style={{ fontSize: '0.6rem', fontWeight: 700, color: activeTab === item.id ? (activeTab==='DEPLOYMENT' && item.id==='DEPLOYMENT' ? '#ef4444' : '#3b82f6') : '#5a6b82', marginTop: '4px', letterSpacing: '0.1em' }}>{item.sub}</span>
+                <span style={{ fontSize: '0.75rem', fontWeight: 800, color: activeTab === item.id ? '#1e293b' : '#64748b' }}>{item.label}</span>
+                <span style={{ fontSize: '0.6rem', fontWeight: 700, color: '#94a3b8', marginTop: '4px' }}>{item.sub}</span>
               </div>
             </div>
           ))}
         </div>
+
+        <div style={{ marginTop:'auto', padding:'1rem' }}>
+          <button onClick={() => { localStorage.clear(); router.push('/'); }} style={{ width:'100%', padding:'0.6rem', background:'#f8fafc', color:'#ef4444', border:'1px solid #e2e8f0', borderRadius:'6px', fontSize:'0.75rem', fontWeight:700, cursor:'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+            <Icons.Logout /> SIGN OUT
+          </button>
+        </div>
       </div>
 
       {/* MAIN AREA */}
-      <div className="vp-main" style={{ flex: 1, padding: '1.5rem', overflowY: 'auto' }}>
+      <div style={{ flex: 1, padding: '1.5rem', overflowY: 'auto' }}>
         
-        {/* HEADER */}
-        {activeTab !== 'DEPLOYMENT' && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
-              <h1 style={{ fontSize: '1.2rem', fontWeight: 900, margin: 0, letterSpacing: '-0.02em' }}>MISSION <span style={{ color: '#3b82f6' }}>COMMAND</span> LAYER</h1>
-            </div>
-
-            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-              <div 
-                onClick={() => setSelectedMission(selectedMission === 'sample(Sheet1)' ? null : 'sample(Sheet1)')}
-                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '0.75rem 1.5rem', minWidth: '280px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
-              >
-                <div>
-                  <div style={{ fontSize: '0.55rem', fontWeight: 800, color: '#8896ab', letterSpacing: '0.1em', marginBottom: '4px' }}>MISSION NODE</div>
-                  <div style={{ fontSize: '0.9rem', fontWeight: 900 }}>{selectedMission || 'SELECT MISSION'}</div>
-                </div>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        {activeTab === 'ASSIGNMENT' && (
+          <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+            <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div>
+                <h1 style={{ fontSize: '1.5rem', fontWeight: 800, margin: 0, color: '#0f172a' }}>Project Assignment Module</h1>
+                <p style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.5rem' }}>Assign new projects to Project Managers by uploading the standard Excel template.</p>
               </div>
-
-              {selectedMission === null && (
-                <div style={{ display: 'flex', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', overflow: 'hidden', padding: '4px' }}>
-                  <div style={{ padding: '0.5rem 1rem', fontSize: '0.7rem', fontWeight: 800, color: '#8896ab', cursor: 'pointer' }}>GLOBAL</div>
-                  <div style={{ padding: '0.5rem 1rem', fontSize: '0.7rem', fontWeight: 800, color: '#8896ab', cursor: 'pointer' }}>D2</div>
-                  <div style={{ padding: '0.5rem 1rem', fontSize: '0.7rem', fontWeight: 800, color: '#fff', background: '#3b82f6', borderRadius: '8px', cursor: 'pointer' }}>D3</div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'DEPLOYMENT' && (
-          <div style={{ marginBottom: '1rem' }}>
-            <h1 style={{ fontSize: '1.2rem', fontWeight: 900, margin: 0, letterSpacing: '-0.02em' }}>MISSION <span style={{ color: '#3b82f6' }}>DEPLOYMENT</span> COMMAND</h1>
-          </div>
-        )}
-
-        {/* TAB CONTENT: DEPLOYMENT */}
-        {activeTab === 'DEPLOYMENT' && (
-          <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', gap: '1rem' }}>
-            
-            {/* Deployment Steps Sidebar */}
-            <div style={{ width: '220px', flexShrink: 0 }}>
-              <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#8896ab', letterSpacing: '0.1em', marginBottom: '1rem' }}>DEPLOYMENT STEPS</div>
-              
-              <div onClick={() => setDeploymentStep(1)} style={{ display: 'flex', gap: '1rem', marginBottom: '1.25rem', opacity: deploymentStep === 1 ? 1 : 0.5, cursor: 'pointer' }}>
-                <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: deploymentStep === 1 ? '#3b82f6' : 'rgba(255,255,255,0.1)', color: deploymentStep === 1 ? '#fff' : 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 900, boxShadow: deploymentStep === 1 ? '0 0 15px rgba(59, 130, 246, 0.4)' : 'none' }}>1</div>
-                <div>
-                  <div style={{ fontSize: '0.9rem', fontWeight: 800 }}>Identify<br/>Manager<br/>Command</div>
-                  <div style={{ fontSize: '0.65rem', color: '#8896ab', marginTop: '0.5rem' }}>Sync with<br/>Manager ID</div>
-                </div>
-              </div>
-
-              <div onClick={() => setDeploymentStep(2)} style={{ display: 'flex', gap: '1rem', marginBottom: '1.25rem', opacity: deploymentStep === 2 ? 1 : 0.5, cursor: 'pointer' }}>
-                <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: deploymentStep === 2 ? '#FFB347' : 'rgba(255,255,255,0.1)', color: deploymentStep === 2 ? '#000' : 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 900, boxShadow: deploymentStep === 2 ? '0 0 15px rgba(255, 179, 71, 0.4)' : 'none' }}>2</div>
-                <div>
-                  <div style={{ fontSize: '0.9rem', fontWeight: 800 }}>Project<br/>Intelligence<br/>Upload</div>
-                  <div style={{ fontSize: '0.65rem', color: '#8896ab', marginTop: '0.5rem' }}>Excel or Image<br/>Artifact</div>
-                </div>
-              </div>
-
-              <div onClick={() => setDeploymentStep(3)} style={{ display: 'flex', gap: '1rem', opacity: deploymentStep === 3 ? 1 : 0.5, cursor: 'pointer' }}>
-                <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: deploymentStep === 3 ? '#00ffd1' : 'rgba(255,255,255,0.1)', color: deploymentStep === 3 ? '#000' : 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 900, boxShadow: deploymentStep === 3 ? '0 0 15px rgba(0, 255, 209, 0.4)' : 'none' }}>3</div>
-                <div>
-                  <div style={{ fontSize: '0.9rem', fontWeight: 800 }}>Validate &<br/>Synchronize</div>
-                  <div style={{ fontSize: '0.65rem', color: '#8896ab', marginTop: '0.5rem' }}>Review<br/>Resource Matrix</div>
-                </div>
+              <div style={{ display: 'flex', gap: '0.5rem', background: '#f1f5f9', padding: '0.25rem', borderRadius: '8px' }}>
+                <button 
+                  onClick={() => setAssignmentTab('NEW')}
+                  style={{ padding: '0.5rem 1rem', fontSize: '0.75rem', fontWeight: 800, border: 'none', borderRadius: '6px', background: assignmentTab === 'NEW' ? '#fff' : 'transparent', color: assignmentTab === 'NEW' ? '#0f172a' : '#64748b', boxShadow: assignmentTab === 'NEW' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none', cursor: 'pointer', transition: 'all 0.2s' }}
+                >
+                  NEW ASSIGNMENT
+                </button>
+                <button 
+                  onClick={() => {
+                    setAssignmentTab('HISTORY');
+                    fetch(`${API}/excel/assignment-history`, { headers: { Authorization: `Bearer ${tok()}` } })
+                      .then(res => res.json())
+                      .then(data => { if (Array.isArray(data)) setAssignmentHistory(data); })
+                      .catch(console.error);
+                  }}
+                  style={{ padding: '0.5rem 1rem', fontSize: '0.75rem', fontWeight: 800, border: 'none', borderRadius: '6px', background: assignmentTab === 'HISTORY' ? '#fff' : 'transparent', color: assignmentTab === 'HISTORY' ? '#0f172a' : '#64748b', boxShadow: assignmentTab === 'HISTORY' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none', cursor: 'pointer', transition: 'all 0.2s' }}
+                >
+                  ASSIGNMENT HISTORY
+                </button>
               </div>
             </div>
 
-            {/* Deployment Main Area */}
-            <div style={{ flex: 1, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', padding: '1.25rem' }}>
-              
-              {deploymentStep === 1 && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                  <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0 0 0.5rem 0' }}>Step 1: <span style={{ color: '#3b82f6' }}>Manager Command</span> Sync</h2>
-                  <p style={{ fontSize: '0.75rem', color: '#8896ab', margin: '0 0 2rem 0' }}>Link this deployment to an active Manager ID to establish a secure intelligence bridge.</p>
-                  
-                  <div style={{ background: '#0d1117', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '2rem', maxWidth: '450px' }}>
-                    <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#8896ab', letterSpacing: '0.1em', marginBottom: '0.5rem' }}>MANAGER ID</div>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <input type="text" placeholder="e.g. MGR-8924" style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.75rem 1rem', borderRadius: '8px', color: '#fff', fontSize: '0.85rem', outline: 'none' }} />
-                      <button style={{ background: '#3b82f6', color: '#fff', border: 'none', padding: '0 1.5rem', borderRadius: '8px', fontWeight: 800, cursor: 'pointer' }}>Verify</button>
+            {assignmentTab === 'NEW' ? (
+            <div style={{ display: 'flex', gap: '2rem' }}>
+              {/* Steps Sidebar */}
+              <div style={{ width: '220px', flexShrink: 0, position: 'relative', paddingLeft: '1rem', marginTop: '1rem' }}>
+                <div style={{ position: 'absolute', left: '32px', top: '16px', bottom: '60px', width: '2px', background: '#e2e8f0', zIndex: 0 }}></div>
+                {/* Active Connecting Line Glow */}
+                <div style={{ position: 'absolute', left: '32px', top: '16px', height: step === 1 ? '0%' : step === 2 ? '45%' : '90%', width: '2px', background: 'linear-gradient(to bottom, #3b82f6, #10b981)', zIndex: 1, transition: 'height 0.6s cubic-bezier(0.4, 0, 0.2, 1)', boxShadow: '0 0 12px rgba(37,99,235,0.6)' }}></div>
+
+                {[
+                  { num: 1, title: 'Identify PM', desc: 'Assign via Email' },
+                  { num: 2, title: 'Upload Excel', desc: 'Project & Budget' },
+                  { num: 3, title: 'Review & Assign', desc: 'Finalize Data' }
+                ].map((s) => (
+                  <div key={s.num} onClick={() => s.num <= step && setStep(s.num)} style={{ display: 'flex', gap: '1.25rem', marginBottom: '3rem', opacity: step >= s.num ? 1 : 0.4, cursor: s.num <= step ? 'pointer' : 'default', position: 'relative', zIndex: 2, transition: 'all 0.3s' }}>
+                    <motion.div 
+                      animate={step === s.num ? { scale: [1, 1.15, 1], boxShadow: ['0 0 0px rgba(59,130,246,0)', '0 0 20px rgba(59,130,246,0.6)', '0 0 0px rgba(59,130,246,0)'] } : {}}
+                      transition={{ duration: 2, repeat: step === s.num ? Infinity : 0 }}
+                      style={{ 
+                        width: '32px', height: '32px', borderRadius: '50%', 
+                        background: step === s.num ? '#0f172a' : step > s.num ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' : '#fff', 
+                        color: step >= s.num ? '#fff' : '#64748b', 
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', fontWeight: 900,
+                        border: step === s.num ? '2px solid #3b82f6' : step > s.num ? 'none' : '2px solid #cbd5e1',
+                        boxShadow: step > s.num ? '0 6px 12px rgba(37,99,235,0.3), inset 0 2px 4px rgba(255,255,255,0.4)' : 'none',
+                        textShadow: step === s.num ? '0 0 8px rgba(255,255,255,0.5)' : 'none'
+                      }}
+                    >
+                      {step > s.num ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><polyline points="20 6 9 17 4 12"></polyline></svg> : s.num}
+                    </motion.div>
+                    <div style={{ paddingTop: '0.25rem' }}>
+                      <div style={{ fontSize: '0.95rem', fontWeight: 800, color: step === s.num ? '#2563eb' : '#0f172a', transition: 'color 0.3s' }}>{s.title}</div>
+                      <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem', fontWeight: 600 }}>{s.desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Step Content */}
+              <div style={{ flex: 1, background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '2rem', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
+                
+                {step === 1 && (
+                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+                    <div style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', borderRadius: '16px', padding: '2.5rem', position: 'relative', overflow: 'hidden', color: 'white', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}>
+                      
+                      {/* Decorative Background */}
+                      <div style={{ position: 'absolute', top: '-100px', right: '-100px', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(59,130,246,0.15) 0%, rgba(255,255,255,0) 70%)', borderRadius: '50%' }}></div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2.5rem' }}>
+                        <div style={{ background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', width: '48px', height: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 10px 15px -3px rgba(37,99,235,0.3)' }}>
+                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                        </div>
+                        <div>
+                          <h2 style={{ fontSize: '1.5rem', fontWeight: 900, margin: 0, letterSpacing: '-0.02em', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>Identify Commander</h2>
+                          <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: 0, marginTop: '0.2rem' }}>Authenticate PM identity to initiate protocol.</p>
+                        </div>
+                      </div>
+                      
+                      <div style={{ position: 'relative', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', border: managerValidated ? '1px solid #10b981' : '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '0.5rem', boxShadow: managerValidated ? '0 0 20px rgba(16,185,129,0.2)' : 'none', transition: 'all 0.3s ease' }}>
+                        <div style={{ padding: '0 1rem', color: managerValidated ? '#10b981' : '#64748b' }}>
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        </div>
+                        <input 
+                          type="email" 
+                          value={managerEmail}
+                          onChange={e => { setManagerEmail(e.target.value); setManagerValidated(false); }}
+                          placeholder="pm.name@arche.global" 
+                          style={{ flex: 1, border: 'none', background: 'transparent', padding: '0.75rem 0', color: '#f8fafc', fontSize: '1.1rem', fontWeight: 600, outline: 'none' }} 
+                        />
+                        <motion.button 
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={validateManager} 
+                          style={{ background: managerValidated ? '#10b981' : '#f8fafc', color: managerValidated ? '#fff' : '#0f172a', border: 'none', padding: '0.8rem 1.5rem', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.3s', boxShadow: managerValidated ? '0 4px 10px rgba(16,185,129,0.3)' : '0 4px 6px rgba(0,0,0,0.1)' }}
+                        >
+                          {managerValidated ? 'VERIFIED' : 'AUTHENTICATE'}
+                        </motion.button>
+                      </div>
+
+                      {managerValidated && (
+                        <motion.div 
+                          initial={{ opacity: 0, y: -10 }} 
+                          animate={{ opacity: 1, y: 0 }} 
+                          transition={{ duration: 0.4 }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.25rem', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '12px', marginBottom: '2rem' }}>
+                            <div style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', width: '48px', height: '48px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '1.25rem', fontWeight: 800, boxShadow: '0 4px 10px rgba(16,185,129,0.4)' }}>
+                              {managerName.charAt(0).toUpperCase()}
+                            </div>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#34d399', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.2rem' }}>Clearance Granted</div>
+                              <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#fff' }}>{managerName}</div>
+                              <div style={{ fontSize: '0.8rem', color: '#a7f3d0', marginTop: '0.1rem' }}>Active Project Manager</div>
+                            </div>
+                            <motion.div animate={{ rotate: 360 }} transition={{ duration: 4, repeat: Infinity, ease: 'linear' }} style={{ color: '#10b981', opacity: 0.5 }}>
+                              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                            </motion.div>
+                          </div>
+                        </motion.div>
+                      )}
+
+                      <motion.button 
+                        whileHover={managerValidated ? { scale: 1.02, boxShadow: '0 10px 25px -5px rgba(37,99,235,0.5)' } : {}}
+                        whileTap={managerValidated ? { scale: 0.98 } : {}}
+                        onClick={() => setStep(2)} 
+                        disabled={!managerValidated} 
+                        style={{ 
+                          marginTop: managerValidated ? '0' : '2rem', 
+                          background: managerValidated ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' : 'rgba(255,255,255,0.05)', 
+                          color: managerValidated ? '#fff' : '#475569', 
+                          border: managerValidated ? 'none' : '1px solid rgba(255,255,255,0.1)', 
+                          padding: '1.1rem 2rem', 
+                          borderRadius: '12px', 
+                          fontWeight: 800, 
+                          fontSize: '0.95rem',
+                          cursor: managerValidated ? 'pointer' : 'not-allowed',
+                          width: '100%',
+                          display: 'flex',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          gap: '0.75rem',
+                          transition: 'all 0.3s'
+                        }}
+                      >
+                        PROCEED TO UPLOAD 
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                      </motion.button>
+                    </div>
+                  </motion.div>
+                )}
+
+                {step === 2 && (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                    <h2 style={{ fontSize: '1.1rem', fontWeight: 700, margin: '0 0 1.5rem 0', color: '#0f172a' }}>Step 2: Upload Project Excel</h2>
+                    
+                    <div style={{ position: 'relative' }}>
+                      <input 
+                        type="file" 
+                        accept=".xlsx, .xls"
+                        onChange={handleFileUpload}
+                        style={{ position: 'absolute', width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }}
+                      />
+                      <div style={{ background: '#f8fafc', border: '2px dashed #cbd5e1', borderRadius: '8px', padding: '3rem', textAlign: 'center' }}>
+                        <div style={{ color: '#2563eb', marginBottom: '1rem', display: 'flex', justifyContent: 'center' }}>
+                          <Icons.Cube />
+                        </div>
+                        <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.5rem' }}>
+                          {uploading ? 'Processing File...' : 'Click or drag Excel file to upload'}
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Must contain Project Information, Costing, and Workforce Budget</div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                {step === 3 && parsedData && (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                      <h2 style={{ fontSize: '1rem', fontWeight: 700, margin: 0, color: '#0f172a' }}>Step 3: Review & Assign</h2>
+                      <div style={{ display: 'flex', gap: '0.25rem', background: '#e2e8f0', padding: '0.25rem', borderRadius: '6px' }}>
+                        <button onClick={() => setStep3Page(1)} style={{ padding: '0.25rem 0.75rem', fontSize: '0.7rem', fontWeight: 800, border: 'none', borderRadius: '4px', background: step3Page === 1 ? '#fff' : 'transparent', color: step3Page === 1 ? '#0f172a' : '#64748b', boxShadow: step3Page === 1 ? '0 1px 3px rgba(0,0,0,0.1)' : 'none', cursor: 'pointer', transition: 'all 0.2s' }}>1. Financials</button>
+                        <button onClick={() => setStep3Page(2)} style={{ padding: '0.25rem 0.75rem', fontSize: '0.7rem', fontWeight: 800, border: 'none', borderRadius: '4px', background: step3Page === 2 ? '#fff' : 'transparent', color: step3Page === 2 ? '#0f172a' : '#64748b', boxShadow: step3Page === 2 ? '0 1px 3px rgba(0,0,0,0.1)' : 'none', cursor: 'pointer', transition: 'all 0.2s' }}>2. Mail Preview</button>
+                      </div>
                     </div>
                     
-                    <div style={{ marginTop: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', background: 'rgba(0, 255, 209, 0.05)', border: '1px dashed rgba(0, 255, 209, 0.2)', borderRadius: '8px' }}>
-                      <Icons.CheckSquare />
-                      <div>
-                        <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#00ffd1' }}>Santhosh B - Validated</div>
-                        <div style={{ fontSize: '0.65rem', color: '#8896ab' }}>Solutions Architect (Global)</div>
+                    {step3Page === 1 ? (
+                      <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '0.75rem', marginBottom: '0.75rem' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                          <div style={{ gridColumn: 'span 2' }}>
+                            <div style={{ fontSize: '0.55rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em' }}>PROJECT NAME</div>
+                            <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#0f172a' }}>{parsedData.summary.project_name || 'N/A'}</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '0.55rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em' }}>CUSTOMER</div>
+                            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0f172a' }}>{parsedData.summary.customer_name || 'N/A'}</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '0.55rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em' }}>ACCOUNT MANAGER</div>
+                            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0f172a' }}>{parsedData.summary.account_manager || 'N/A'}</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '0.55rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em' }}>PROJECT DURATION</div>
+                            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0f172a' }}>{parsedData.summary.project_duration || 'N/A'}</div>
+                          </div>
+                          <div style={{ gridColumn: 'span 5' }}>
+                            <div style={{ width: '100%', height: '1px', background: '#e2e8f0', margin: '0.2rem 0' }}></div>
+                          </div>
+                        </div>
+                        
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.4rem' }}>
+                          {[
+                            { label: 'TOTAL COST PRICE', value: `₹${parsedData.summary.total_cost_price?.toLocaleString() || '0'}` },
+                            { label: 'TOTAL SELL PRICE', value: `₹${parsedData.summary.total_sell_price?.toLocaleString() || '0'}`, color: '#2563eb' },
+                            { label: 'GST', value: `₹${parsedData.summary.gst?.toLocaleString() || '0'}` },
+                            { label: 'SELL PRICE W/ GST', value: `₹${parsedData.summary.total_sell_price_with_gst?.toLocaleString() || '0'}` },
+                            { label: 'IMPLEMENTATION', value: `₹${parsedData.summary.implementation_cost?.toLocaleString() || '0'}` },
+                            { label: 'PMC COST', value: `₹${parsedData.summary.pmc_cost?.toLocaleString() || '0'}` },
+                            { label: 'FREIGHT COST', value: `₹${parsedData.summary.freight_cost?.toLocaleString() || '0'}` },
+                            { label: 'SBU', value: parsedData.summary.sbu || 'N/A' },
+                            { label: 'MARGIN AMOUNT', value: `₹${parsedData.summary.margin_amount?.toLocaleString() || '0'}`, color: '#10b981' },
+                            { label: 'MARGIN %', value: `${(parsedData.summary.margin_pct * 100).toFixed(2)}%`, color: '#10b981' },
+                            { label: 'MARGIN TARGET', value: `${(parsedData.summary.margin_target * 100).toFixed(2)}%` },
+                            { label: 'MARGIN DEVIATION', value: `${(parsedData.summary.margin_deviation_pct * 100).toFixed(2)}%`, color: (parsedData.summary.margin_deviation_pct || 0) < 0 ? '#ef4444' : '#10b981' },
+                          ].map((item, idx) => (
+                            <div key={idx} style={{ background: '#fff', border: '1px solid #e2e8f0', padding: '0.3rem 0.5rem', borderRadius: '4px' }}>
+                              <div style={{ fontSize: '0.5rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.label}</div>
+                              <div style={{ fontSize: '0.8rem', fontWeight: 800, color: item.color || '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.value}</div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                  
-                  <button onClick={() => setDeploymentStep(2)} style={{ marginTop: '2rem', background: '#3b82f6', color: '#fff', border: 'none', padding: '0.85rem 2rem', borderRadius: '8px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    Continue to Upload
-                  </button>
-                </motion.div>
-              )}
+                    ) : (
+                      <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '1rem', marginBottom: '0.75rem' }}>
+                        <div style={{ marginBottom: '1rem', paddingBottom: '0.75rem', borderBottom: '1px solid #f1f5f9' }}>
+                          <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.25rem' }}><strong>From:</strong> <span style={{ color: '#0f172a' }}>{previewHtml.from_email || 'Loading...'}</span></div>
+                          <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.25rem' }}><strong>To:</strong> <span style={{ color: '#0f172a' }}>{previewHtml.to_email || managerEmail}</span></div>
+                          <div style={{ fontSize: '0.75rem', color: '#64748b' }}><strong>Subject:</strong> <span style={{ color: '#0f172a' }}>[DigiTrac] New Project Assigned</span></div>
+                        </div>
+                        <div style={{ fontSize: '0.8rem', maxHeight: '250px', overflowY: 'auto' }} dangerouslySetInnerHTML={{ __html: previewHtml.html_body || "Generating preview..." }}></div>
+                      </div>
+                    )}
 
-              {deploymentStep === 2 && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                  <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0 0 0.5rem 0' }}>Step 2: <span style={{ color: '#FFB347' }}>Project Intelligence</span> Upload</h2>
-                  <p style={{ fontSize: '0.75rem', color: '#8896ab', margin: '0 0 2rem 0' }}>Upload Excel matrices or image artifacts for AI extraction and baseline establishment.</p>
-                  
-                  <div style={{ background: '#0d1117', border: '2px dashed rgba(255,179,71,0.3)', borderRadius: '12px', padding: '3rem', textAlign: 'center', cursor: 'pointer', maxWidth: '600px' }}>
-                    <div style={{ color: '#FFB347', marginBottom: '1rem', display: 'flex', justifyContent: 'center' }}>
-                      <Icons.Cube />
-                    </div>
-                    <div style={{ fontSize: '0.9rem', fontWeight: 800, marginBottom: '0.5rem' }}>Drag & drop intelligence artifacts</div>
-                    <div style={{ fontSize: '0.7rem', color: '#8896ab' }}>Supports .xlsx, .csv, .jpg, .png up to 50MB</div>
-                  </div>
-                  
-                  <div style={{ marginTop: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '8px', maxWidth: '600px' }}>
-                    <Icons.CheckSquare />
-                    <div>
-                      <div style={{ fontSize: '0.75rem', fontWeight: 800 }}>sample_sheet1.xlsx</div>
-                      <div style={{ fontSize: '0.65rem', color: '#8896ab' }}>142 KB • Extracted 74 Rows</div>
-                    </div>
-                  </div>
-                  
-                  <button onClick={() => setDeploymentStep(3)} style={{ marginTop: '2rem', background: '#FFB347', color: '#000', border: 'none', padding: '0.85rem 2rem', borderRadius: '8px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    Process Artifacts
-                  </button>
-                </motion.div>
-              )}
-
-              {deploymentStep === 3 && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                  <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0 0 0.5rem 0' }}>Step 3: <span style={{ color: '#00ffd1' }}>Data Audit</span> & Business Validation</h2>
-                  <p style={{ fontSize: '0.75rem', color: '#8896ab', margin: '0 0 2rem 0' }}>Review and verify intelligence nodes before command synchronization.</p>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
-                    <div style={{ background: '#0d1117', borderRadius: '12px', padding: '0.85rem', border: '1px solid rgba(255,255,255,0.05)' }}>
-                      <div style={{ fontSize: '0.6rem', fontWeight: 800, color: '#8896ab', letterSpacing: '0.1em', marginBottom: '0.5rem' }}>TOTAL REVENUE</div>
-                      <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#00ffd1' }}>₹45.9L</div>
-                    </div>
-                    <div style={{ background: '#0d1117', borderRadius: '12px', padding: '0.85rem', border: '1px solid rgba(255,255,255,0.05)' }}>
-                      <div style={{ fontSize: '0.6rem', fontWeight: 800, color: '#8896ab', letterSpacing: '0.1em', marginBottom: '0.5rem' }}>TOTAL COST</div>
-                      <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#FFB347' }}>₹37.1L</div>
-                    </div>
-                    <div style={{ background: '#0d1117', borderRadius: '12px', padding: '0.85rem', border: '1px solid rgba(255,255,255,0.05)' }}>
-                      <div style={{ fontSize: '0.6rem', fontWeight: 800, color: '#8896ab', letterSpacing: '0.1em', marginBottom: '0.5rem' }}>TOTAL PROFIT</div>
-                      <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#3b82f6' }}>₹8.9L</div>
-                    </div>
-                  </div>
-
-                  <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '900px' }}>
-                  <thead>
-                    <tr>
-                      <th style={{ paddingBottom: '0.5rem', fontSize: '0.65rem', fontWeight: 800, color: '#8896ab', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>STATUS</th>
-                      <th style={{ paddingBottom: '0.5rem', fontSize: '0.65rem', fontWeight: 800, color: '#8896ab', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>SL.NO</th>
-                      <th style={{ paddingBottom: '0.5rem', fontSize: '0.65rem', fontWeight: 800, color: '#8896ab', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>SAP ID</th>
-                      <th style={{ paddingBottom: '0.5rem', fontSize: '0.65rem', fontWeight: 800, color: '#8896ab', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>DESCRIPTION</th>
-                      <th style={{ paddingBottom: '0.5rem', fontSize: '0.65rem', fontWeight: 800, color: '#8896ab', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>QTY</th>
-                      <th style={{ paddingBottom: '0.5rem', fontSize: '0.65rem', fontWeight: 800, color: '#8896ab', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>PURCHASE UN.</th>
-                      <th style={{ paddingBottom: '0.5rem', fontSize: '0.65rem', fontWeight: 800, color: '#8896ab', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>PURCHASE TOT.</th>
-                      <th style={{ paddingBottom: '0.5rem', fontSize: '0.65rem', fontWeight: 800, color: '#8896ab', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>SELLING UN.</th>
-                      <th style={{ paddingBottom: '0.5rem', fontSize: '0.65rem', fontWeight: 800, color: '#8896ab', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>SELLING TOT.</th>
-                      <th style={{ paddingBottom: '0.5rem', fontSize: '0.65rem', fontWeight: 800, color: '#8896ab', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>GST VAL</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[
-                      { sl: 1, id: 'S_PRD103451', desc: 'HPE Networking Instant On Switch 24p G...', qty: '3', pu: '₹45,500', pt: '₹136,500', su: '₹52,907', st: '₹158,721', gst: '₹28,570' },
-                      { sl: 2, id: 'S_PRD103452', desc: 'HPE Networking Instant On Switch 24p G...', qty: '4', pu: '₹23,500', pt: '₹94,000', su: '₹27,326', st: '₹109,304', gst: '₹19,675' },
-                      { sl: 3, id: 'S_PRD101303', desc: 'HPE Aruba Networking AP-505 (RW) TAA...', qty: '4', pu: '₹33,000', pt: '₹132,000', su: '₹38,372', st: '₹153,488', gst: '₹27,628' },
-                      { sl: 4, id: 'S_FG-60F', desc: '10 x GE RJ45 ports (including 7 x Internal...', qty: '2', pu: '₹115,709', pt: '₹231,418', su: '₹134,545', st: '₹269,090', gst: '₹48,436' },
-                      { sl: 5, id: 'S_PRD103453', desc: 'HPE ProLiant DL360 Gen11 1P 4LFF 500W...', qty: '1', pu: '₹548,000', pt: '₹548,000', su: '₹637,209', st: '₹637,209', gst: '₹114,698' }
-                    ].map(row => (
-                      <tr key={row.sl}>
-                        <td style={{ padding: '0.6rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', color: '#00ffd1' }}><Icons.CheckSquare /></td>
-                        <td style={{ padding: '0.6rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', fontWeight: 800 }}>{row.sl}</td>
-                        <td style={{ padding: '0.6rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', fontWeight: 800 }}>{row.id}</td>
-                        <td style={{ padding: '0.6rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', color: '#d1d5db' }}>{row.desc}</td>
-                        <td style={{ padding: '0.6rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', fontWeight: 800 }}>{row.qty}</td>
-                        <td style={{ padding: '0.6rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', color: '#d1d5db' }}>{row.pu}</td>
-                        <td style={{ padding: '0.6rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', fontWeight: 800, color: '#FFB347' }}>{row.pt}</td>
-                        <td style={{ padding: '0.6rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', color: '#d1d5db' }}>{row.su}</td>
-                        <td style={{ padding: '0.6rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', fontWeight: 800, color: '#00ffd1' }}>{row.st}</td>
-                        <td style={{ padding: '0.6rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', color: '#d1d5db' }}>{row.gst}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    <button onClick={handleAssignProject} disabled={assigning} style={{ background: '#1e293b', color: '#fff', border: 'none', padding: '0.85rem 2rem', borderRadius: '6px', fontWeight: 700, cursor: assigning ? 'not-allowed' : 'pointer', width: '100%' }}>
+                      {assigning ? 'Assigning...' : 'Confirm Assignment to PM'}
+                    </button>
                   </motion.div>
+                )}
+
+              </div>
+            </div>
+            ) : (
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                    <thead style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                      <tr>
+                        <th style={{ padding: '1rem', fontSize: '0.65rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Date Assigned</th>
+                        <th style={{ padding: '1rem', fontSize: '0.65rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>From</th>
+                        <th style={{ padding: '1rem', fontSize: '0.65rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>To (Manager)</th>
+                        <th style={{ padding: '1rem', fontSize: '0.65rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Project</th>
+                        <th style={{ padding: '1rem', fontSize: '0.65rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Duration</th>
+                        <th style={{ padding: '1rem', fontSize: '0.65rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Margin</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {assignmentHistory.map(item => (
+                        <tr key={item.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                          <td style={{ padding: '1rem', fontSize: '0.8rem', color: '#64748b' }}>{new Date(item.assigned_date).toLocaleDateString()}</td>
+                          <td style={{ padding: '1rem', fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>{item.assigned_by}</td>
+                          <td style={{ padding: '1rem', fontSize: '0.85rem', fontWeight: 700, color: '#2563eb' }}>{item.manager_email}</td>
+                          <td style={{ padding: '1rem' }}>
+                            <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0f172a' }}>{item.project_name}</div>
+                            <div style={{ fontSize: '0.7rem', color: '#64748b' }}>{item.customer_name}</div>
+                          </td>
+                          <td style={{ padding: '1rem', fontSize: '0.8rem', color: '#64748b' }}>{item.duration}</td>
+                          <td style={{ padding: '1rem' }}>
+                            <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#10b981' }}>₹{item.margin_amount?.toLocaleString() || '0'}</div>
+                            <div style={{ fontSize: '0.7rem', color: '#10b981' }}>{((item.margin_pct || 0) * 100).toFixed(2)}%</div>
+                          </td>
+                        </tr>
+                      ))}
+                      {assignmentHistory.length === 0 && (
+                        <tr>
+                          <td colSpan="6" style={{ padding: '3rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.85rem' }}>No assignment history found.</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </motion.div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'OVERVIEW' && (() => {
+          const validPortfolio = Array.isArray(portfolio) ? portfolio : [];
+          const filteredPortfolio = validPortfolio.filter(p => portfolioFilter === 'ALL' || p.status === portfolioFilter);
+          
+          const ITEMS_PER_PAGE = 10;
+          const totalPages = Math.max(1, Math.ceil(filteredPortfolio.length / ITEMS_PER_PAGE));
+          const paginatedPortfolio = filteredPortfolio.slice((portfolioPage - 1) * ITEMS_PER_PAGE, portfolioPage * ITEMS_PER_PAGE);
+
+          const totalProjects = validPortfolio.length;
+          const greenCount = validPortfolio.filter(p => p.status === 'Green').length;
+          const orangeCount = validPortfolio.filter(p => p.status === 'Orange').length;
+          const redCount = validPortfolio.filter(p => p.status === 'Red').length;
+          
+          const greenEnd = totalProjects ? (greenCount / totalProjects) * 360 : 0;
+          const orangeEnd = greenEnd + (totalProjects ? (orangeCount / totalProjects) * 360 : 0);
+          
+          const totalPlannedHours = validPortfolio.reduce((acc, p) => acc + (p.kpis?.planned_hours || 0), 0);
+          const totalActualHours = validPortfolio.reduce((acc, p) => acc + (p.kpis?.actual_hours || 0), 0);
+          
+          return (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} style={{ padding: '0 1rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '1rem' }}>
+                <div>
+                  <h1 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#0f172a' }}>Portfolio Overview</h1>
+                  <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.2rem' }}>Real-time health and margin tracking of all assigned projects.</p>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  {/* Filter Toggles */}
+                  <div style={{ display: 'flex', gap: '0.4rem', background: '#f1f5f9', padding: '0.2rem', borderRadius: '8px' }}>
+                    {['ALL', 'Green', 'Orange', 'Red'].map(f => (
+                      <button 
+                        key={f} 
+                        onClick={() => { setPortfolioFilter(f); setPortfolioPage(1); }}
+                        style={{ 
+                          border: 'none', 
+                          background: portfolioFilter === f ? '#fff' : 'transparent', 
+                          boxShadow: portfolioFilter === f ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
+                          color: portfolioFilter === f ? '#0f172a' : '#64748b',
+                          fontWeight: portfolioFilter === f ? 800 : 600,
+                          fontSize: '0.65rem',
+                          padding: '0.3rem 0.8rem',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        {f === 'ALL' ? 'All Projects' : f === 'Green' ? 'Healthy' : f === 'Orange' ? 'At-Risk' : 'Critical'}
+                      </button>
+                    ))}
+                  </div>
+                  {/* New Project Button */}
+                  <button 
+                    onClick={() => setActiveTab('ASSIGNMENT')}
+                    style={{ background: '#2563eb', color: '#fff', border: 'none', padding: '0.5rem 1rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 4px 6px -1px rgba(37,99,235,0.2)' }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    New Project
+                  </button>
+                </div>
+              </div>
+
+              {/* Data Dashboards */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                 {/* Donut Chart Widget */}
+                 <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '0.4rem 0.8rem', display: 'flex', alignItems: 'center', gap: '0.8rem', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
+                    <div style={{ position: 'relative', width: '40px', height: '40px' }}>
+                       <div style={{
+                          width: '100%', height: '100%', borderRadius: '50%',
+                          background: totalProjects === 0 
+                            ? '#e2e8f0' 
+                            : `conic-gradient(#10b981 0deg ${greenEnd}deg, #f59e0b ${greenEnd}deg ${orangeEnd}deg, #ef4444 ${orangeEnd}deg 360deg)`
+                       }}></div>
+                       <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '28px', height: '28px', background: '#fff', borderRadius: '50%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                         <div style={{ fontSize: '0.75rem', fontWeight: 900, color: '#0f172a', lineHeight: 1 }}>{totalProjects}</div>
+                       </div>
+                    </div>
+                    <div>
+                       <div style={{ display: 'flex', gap: '0.75rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.55rem', fontWeight: 700, color: '#475569' }}><div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981' }}></div> {greenCount} Healthy</div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.55rem', fontWeight: 700, color: '#475569' }}><div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#f59e0b' }}></div> {orangeCount} At-Risk</div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.55rem', fontWeight: 700, color: '#475569' }}><div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ef4444' }}></div> {redCount} Critical</div>
+                       </div>
+                    </div>
+                 </div>
+
+                 {/* Hours Tracking Widget */}
+                 <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '0.4rem 0.8rem', boxShadow: '0 1px 2px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.2rem' }}>
+                      <div style={{ fontSize: '0.6rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.3rem' }}><Icons.Overview /> Enterprise Burn</div>
+                      <div style={{ fontSize: '0.55rem', fontWeight: 700, color: '#64748b' }}>
+                        <span style={{ color: '#2563eb', fontWeight: 900 }}>{totalActualHours.toLocaleString()}</span> / {totalPlannedHours.toLocaleString()} hrs
+                      </div>
+                    </div>
+                    <div style={{ width: '100%', height: '3px', background: '#e2e8f0', borderRadius: '1.5px', overflow: 'hidden', position: 'relative' }}>
+                      <div style={{ width: `${totalPlannedHours ? Math.min(100, (totalActualHours / totalPlannedHours) * 100) : 0}%`, background: 'linear-gradient(90deg, #3b82f6 0%, #2563eb 100%)', height: '100%', borderRadius: '1.5px' }}></div>
+                    </div>
+                 </div>
+              </div>
+
+              {/* Compact List View */}
+              {totalProjects === 0 ? (
+                 <div style={{ textAlign: 'center', padding: '1rem', background: '#f8fafc', borderRadius: '8px', border: '2px dashed #e2e8f0' }}>
+                   <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>No active projects assigned.</div>
+                 </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
+                    {paginatedPortfolio.map((p, i) => (
+                      <div key={i} style={{ borderBottom: i === paginatedPortfolio.length - 1 ? 'none' : '1px solid #f1f5f9', padding: '0.2rem 0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#fff' }}>
+                         {/* Status Indicator */}
+                         <div style={{ width: '3px', height: '16px', borderRadius: '1.5px', background: p.status === 'Red' ? '#ef4444' : p.status === 'Orange' ? '#f59e0b' : '#10b981', flexShrink: 0 }}></div>
+                         
+                         {/* Project Info */}
+                         <div style={{ flex: '2', minWidth: '120px', overflow: 'hidden' }}>
+                           <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={p.name}>{p.name}</div>
+                           <div style={{ fontSize: '0.55rem', color: '#64748b', marginTop: '0', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.customer_name}</span>
+                             <span style={{ color: '#cbd5e1' }}>|</span>
+                             <span>{p.duration}Mos</span>
+                           </div>
+                         </div>
+                         
+                         {/* Manager */}
+                         <div style={{ flex: '1', minWidth: '70px', display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.6rem', fontWeight: 700, color: '#475569' }}>
+                           <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> 
+                           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{(p.manager_name || '').split('@')[0]}</span>
+                         </div>
+
+                         {/* Margins */}
+                         <div style={{ flex: '1.5', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                           <div>
+                             <div style={{ fontSize: '0.45rem', fontWeight: 800, color: '#94a3b8', letterSpacing: '0.05em' }}>TARGET</div>
+                             <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#0f172a' }}>{p.kpis?.target_margin_pct || 0}%</div>
+                           </div>
+                           <div>
+                             <div style={{ fontSize: '0.45rem', fontWeight: 800, color: p.status === 'Red' ? '#dc2626' : p.status === 'Orange' ? '#d97706' : '#059669', letterSpacing: '0.05em' }}>FORECAST</div>
+                             <div style={{ fontSize: '0.7rem', fontWeight: 900, color: p.status === 'Red' ? '#ef4444' : p.status === 'Orange' ? '#f59e0b' : '#10b981' }}>{p.kpis?.forecast_margin_pct || 0}%</div>
+                           </div>
+                         </div>
+
+                         {/* Progress */}
+                         <div style={{ flex: '1', minWidth: '80px', display: 'flex', flexDirection: 'column', gap: '0.1rem' }}>
+                           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.5rem', fontWeight: 700 }}>
+                             <span style={{ color: '#64748b' }}>Progress</span>
+                             <span style={{ color: '#2563eb' }}>{p.kpis?.progress_pct || 0}%</span>
+                           </div>
+                           <div style={{ width: '100%', height: '3px', background: '#e2e8f0', borderRadius: '1.5px', overflow: 'hidden' }}>
+                             <div style={{ width: `${Math.min(100, p.kpis?.progress_pct || 0)}%`, background: '#2563eb', height: '100%', borderRadius: '1.5px' }}></div>
+                           </div>
+                         </div>
+                      </div>
+                    ))}
+                  </div>
+                  {filteredPortfolio.length === 0 && (
+                     <div style={{ padding: '1.5rem', textAlign: 'center', fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600, border: '1px dashed #e2e8f0', borderRadius: '8px' }}>
+                       No projects match the selected filter.
+                     </div>
+                  )}
+                  {/* Pagination Controls */}
+                  {totalPages > 1 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem', padding: '0 0.5rem' }}>
+                      <div style={{ fontSize: '0.65rem', fontWeight: 600, color: '#64748b' }}>
+                        Showing {(portfolioPage - 1) * ITEMS_PER_PAGE + 1} - {Math.min(portfolioPage * ITEMS_PER_PAGE, filteredPortfolio.length)} of {filteredPortfolio.length}
+                      </div>
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button 
+                          disabled={portfolioPage === 1}
+                          onClick={() => setPortfolioPage(p => Math.max(1, p - 1))}
+                          style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '4px', padding: '0.2rem 0.5rem', fontSize: '0.65rem', fontWeight: 600, cursor: portfolioPage === 1 ? 'not-allowed' : 'pointer', color: portfolioPage === 1 ? '#cbd5e1' : '#475569' }}
+                        >
+                          Prev
+                        </button>
+                        <span style={{ fontSize: '0.65rem', fontWeight: 600, color: '#0f172a', padding: '0.2rem 0' }}>Page {portfolioPage} of {totalPages}</span>
+                        <button 
+                          disabled={portfolioPage === totalPages}
+                          onClick={() => setPortfolioPage(p => Math.min(totalPages, p + 1))}
+                          style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '4px', padding: '0.2rem 0.5rem', fontSize: '0.65rem', fontWeight: 600, cursor: portfolioPage === totalPages ? 'not-allowed' : 'pointer', color: portfolioPage === totalPages ? '#cbd5e1' : '#475569' }}
+                        >
+                          Next
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
-            </div>
-          </motion.div>
-        )}
-
-        {/* TAB CONTENT: PROJECT INTELLIGENCE (UNSELECTED) */}
-        {activeTab === 'PROJECT_INTELLIGENCE' && selectedMission === null && (
-          <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-              
-              {/* Left Panel: Execution Status Engine */}
-              <div className="vp-glass" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '0.85rem', borderRadius: '16px', position: 'relative' }}>
-                <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: '#FFB347', borderRadius: '16px 0 0 16px' }} />
-                
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                  <h3 style={{ margin: 0, fontSize: '0.85rem', fontWeight: 800, letterSpacing: '0.1em', color: '#fff' }}>EXECUTION STATUS ENGINE</h3>
-                  <div style={{ background: 'rgba(255, 179, 71, 0.15)', color: '#FFB347', padding: '0.3rem 0.8rem', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#FFB347' }} />
-                    Moderate
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem' }}>
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', marginBottom: '0.2rem' }}>
-                      <span style={{ fontSize: '1.8rem', fontWeight: 900, color: '#fff' }}>100%</span>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00ffd1" strokeWidth="4"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
-                    </div>
-                    <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#00ffd1', marginTop: '1rem' }}>4%</div>
-                    <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#8896ab', marginTop: '4px' }}>Current Efficiency</div>
-                  </div>
-
-                  <div>
-                    <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#00ffd1' }}>100</div>
-                    <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#00ffd1', marginTop: '1.2rem' }}>Score</div>
-                    <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#3b82f6', marginTop: '4px', textDecoration: 'underline', cursor: 'pointer' }}>Performance Index</div>
-                  </div>
-
-                  <div>
-                    <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#00ffd1' }}>28.2%</div>
-                    <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#8896ab', marginTop: '2.5rem' }}>Margin</div>
-                  </div>
-                </div>
-
-                <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', padding: '0.6rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                  <Icons.Lightning />
-                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#d1d5db' }}>Mission 121212 (GLOBAL) execution is 100.0% aligned with baseline.</span>
-                </div>
+            </motion.div>
+          );
+        })()}
+      
+        {activeTab === 'APPROVALS' && (
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            transition={{ duration: 0.4 }}
+            style={{ padding: '0.5rem 1rem', maxWidth: '100%', margin: '0 auto' }}
+          >
+            {/* Header Section */}
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              marginBottom: '0.75rem',
+              background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+              padding: '0.5rem 1.5rem',
+              borderRadius: '12px',
+              color: 'white',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <h1 style={{ fontSize: '1.25rem', fontWeight: 900, margin: 0, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Icons.Folder /> Governance Command
+                </h1>
+                <div style={{ height: '20px', width: '1px', background: 'rgba(255,255,255,0.2)' }}></div>
+                <p style={{ fontSize: '0.75rem', color: '#94a3b8', margin: 0, fontWeight: 500 }}>
+                  Strategic oversight and resolution interface.
+                </p>
               </div>
-
-              {/* Right Panel: Metric Table */}
-              <div className="vp-glass" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '0.85rem', borderRadius: '16px' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr>
-                      <th style={{ paddingBottom: '0.75rem', textAlign: 'left', fontSize: '0.65rem', fontWeight: 800, color: '#8896ab', letterSpacing: '0.1em' }}>METRIC</th>
-                      <th style={{ paddingBottom: '0.75rem', textAlign: 'left', fontSize: '0.65rem', fontWeight: 800, color: '#8896ab', letterSpacing: '0.1em' }}>BASELINE (EXCEL)</th>
-                      <th style={{ paddingBottom: '0.75rem', textAlign: 'left', fontSize: '0.65rem', fontWeight: 800, color: '#8896ab', letterSpacing: '0.1em' }}>ACTUAL</th>
-                      <th style={{ paddingBottom: '0.75rem', textAlign: 'left', fontSize: '0.65rem', fontWeight: 800, color: '#8896ab', letterSpacing: '0.1em' }}>VARIANCE</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td style={{ padding: '0.5rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '0.85rem', fontWeight: 800 }}>Revenue</td>
-                      <td style={{ padding: '0.5rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '0.85rem', fontWeight: 600, color: '#8896ab' }}>₹10.9L</td>
-                      <td style={{ padding: '0.5rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '0.85rem', fontWeight: 800 }}>₹10.9L</td>
-                      <td style={{ padding: '0.5rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '0.75rem', fontWeight: 800, color: '#00ffd1', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><div style={{ width: 6, height: 6, borderRadius: '50%', background: '#00ffd1' }}/>Verified</td>
-                    </tr>
-                    <tr>
-                      <td style={{ padding: '0.5rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '0.85rem', fontWeight: 800 }}>Cost</td>
-                      <td style={{ padding: '0.5rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '0.85rem', fontWeight: 600, color: '#8896ab' }}>₹7.8L</td>
-                      <td style={{ padding: '0.5rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '0.85rem', fontWeight: 800 }}>₹7.8L</td>
-                      <td style={{ padding: '0.5rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '0.75rem', fontWeight: 800, color: '#3b82f6', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><div style={{ width: 6, height: 6, borderRadius: '50%', background: '#3b82f6' }}/>Balanced</td>
-                    </tr>
-                    <tr>
-                      <td style={{ padding: '0.5rem 0', fontSize: '0.85rem', fontWeight: 800 }}>Hours</td>
-                      <td style={{ padding: '0.5rem 0', fontSize: '0.85rem', fontWeight: 600, color: '#8896ab' }}>19288</td>
-                      <td style={{ padding: '0.5rem 0', fontSize: '0.85rem', fontWeight: 800 }}>0</td>
-                      <td style={{ padding: '0.5rem 0', fontSize: '0.75rem', fontWeight: 800, color: '#00ffd1', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><div style={{ width: 6, height: 6, borderRadius: '50%', background: '#00ffd1' }}/>Efficient</td>
-                    </tr>
-                  </tbody>
-                </table>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'rgba(255,255,255,0.05)', padding: '0.4rem 0.75rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                <span style={{ position: 'relative', display: 'flex', height: '10px', width: '10px' }}>
+                  <motion.span animate={{ scale: [1, 2, 1], opacity: [0.8, 0, 0.8] }} transition={{ duration: 2, repeat: Infinity }} style={{ position: 'absolute', height: '100%', width: '100%', borderRadius: '50%', background: '#10b981' }}></motion.span>
+                  <span style={{ position: 'relative', borderRadius: '50%', height: '10px', width: '10px', background: '#10b981' }}></span>
+                </span>
+                <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#f8fafc', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Live Sync</span>
               </div>
             </div>
 
-            {/* Bottom Panel: Resource Intelligence Matrix */}
-            <div className="vp-glass" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '0.85rem', borderRadius: '16px' }}>
-              <h3 style={{ margin: '0 0 2rem 0', fontSize: '0.85rem', fontWeight: 800, letterSpacing: '0.1em', color: '#fff' }}>RESOURCE INTELLIGENCE MATRIX (EXACT EXCEL REFLECTION)</h3>
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                  <thead>
-                    <tr>
-                      <th style={{ paddingBottom: '0.5rem', fontSize: '0.65rem', fontWeight: 800, color: '#8896ab', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>S.N</th>
-                      <th style={{ paddingBottom: '0.5rem', fontSize: '0.65rem', fontWeight: 800, color: '#8896ab', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>SAP ID</th>
-                      <th style={{ paddingBottom: '0.5rem', fontSize: '0.65rem', fontWeight: 800, color: '#8896ab', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>DESCRIPTION</th>
-                      <th style={{ paddingBottom: '0.5rem', fontSize: '0.65rem', fontWeight: 800, color: '#8896ab', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>QTY</th>
-                      <th style={{ paddingBottom: '0.5rem', fontSize: '0.65rem', fontWeight: 800, color: '#8896ab', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>PURCHASE UN.</th>
-                      <th style={{ paddingBottom: '0.5rem', fontSize: '0.65rem', fontWeight: 800, color: '#8896ab', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>PURCHASE TOT.</th>
-                      <th style={{ paddingBottom: '0.5rem', fontSize: '0.65rem', fontWeight: 800, color: '#8896ab', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>SELLING UN.</th>
-                      <th style={{ paddingBottom: '0.5rem', fontSize: '0.65rem', fontWeight: 800, color: '#8896ab', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>SELLING TOT.</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td style={{ padding: '0.6rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', fontWeight: 800 }}>1</td>
-                      <td style={{ padding: '0.6rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', fontWeight: 800 }}>S_PRD103451</td>
-                      <td style={{ padding: '0.6rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', color: '#d1d5db' }}>HPE Networking Instant On Switch 24p Gigabit Cl.4 PoE 4p SFP+ 3...</td>
-                      <td style={{ padding: '0.6rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', fontWeight: 800 }}>3</td>
-                      <td style={{ padding: '0.6rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', color: '#d1d5db' }}>₹45,500</td>
-                      <td style={{ padding: '0.6rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', fontWeight: 800, color: '#FFB347' }}>₹136,500</td>
-                      <td style={{ padding: '0.6rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', color: '#d1d5db' }}>₹52,907</td>
-                      <td style={{ padding: '0.6rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', fontWeight: 800, color: '#00ffd1' }}>₹158,721</td>
-                    </tr>
-                    <tr>
-                      <td style={{ padding: '0.6rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', fontWeight: 800 }}>51</td>
-                      <td style={{ padding: '0.6rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', fontWeight: 800 }}>SER102632</td>
-                      <td style={{ padding: '0.6rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', color: '#d1d5db' }}>Labour Charges for CCTV</td>
-                      <td style={{ padding: '0.6rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', fontWeight: 800 }}>1</td>
-                      <td style={{ padding: '0.6rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', color: '#d1d5db' }}>₹643,082</td>
-                      <td style={{ padding: '0.6rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', fontWeight: 800, color: '#FFB347' }}>₹643,082</td>
-                      <td style={{ padding: '0.6rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', color: '#d1d5db' }}>₹926,665</td>
-                      <td style={{ padding: '0.6rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', fontWeight: 800, color: '#00ffd1' }}>₹926,665</td>
-                    </tr>
-                    <tr style={{ background: 'rgba(108, 99, 255, 0.05)' }}>
-                      <td colSpan="3" style={{ padding: '0.6rem 0', fontSize: '0.75rem', fontWeight: 800, color: '#6C63FF' }}>TOTAL (EXCEL SUMMARY)</td>
-                      <td style={{ padding: '0.6rem 0', fontSize: '0.75rem', fontWeight: 800 }}>--</td>
-                      <td style={{ padding: '0.6rem 0', fontSize: '0.75rem', fontWeight: 800 }}>--</td>
-                      <td style={{ padding: '0.6rem 0', fontSize: '0.85rem', fontWeight: 900, color: '#FFB347' }}>₹779,582</td>
-                      <td style={{ padding: '0.6rem 0', fontSize: '0.75rem', fontWeight: 800 }}>--</td>
-                      <td style={{ padding: '0.6rem 0', fontSize: '0.85rem', fontWeight: 900, color: '#00ffd1' }}>₹1,085,386</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        {/* TAB CONTENT: PROJECT INTELLIGENCE (SAMPLE SHEET SELECTED) */}
-        {activeTab === 'PROJECT_INTELLIGENCE' && selectedMission === 'sample(Sheet1)' && (
-          <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-              
-              {/* Execution Status Engine (Selected) */}
-              <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '0.85rem', borderRadius: '16px', position: 'relative' }}>
-                <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: '#FFB347', borderRadius: '16px 0 0 16px' }} />
-                
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                  <h3 style={{ margin: 0, fontSize: '0.85rem', fontWeight: 800, letterSpacing: '0.1em', color: '#fff' }}>EXECUTION STATUS ENGINE</h3>
-                  <div style={{ background: 'rgba(255, 179, 71, 0.15)', color: '#FFB347', padding: '0.3rem 0.8rem', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#FFB347' }} />
-                    Moderate Risk
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem' }}>
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', marginBottom: '0.2rem' }}>
-                      <span style={{ fontSize: '1.8rem', fontWeight: 900, color: '#fff' }}>67%</span>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00ffd1" strokeWidth="4"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
-                    </div>
-                    <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#00ffd1', marginTop: '1rem' }}>+4%</div>
-                    <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#8896ab', marginTop: '4px' }}>Completion</div>
-                  </div>
-
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', marginBottom: '0.2rem' }}>
-                      <span style={{ fontSize: '1.8rem', fontWeight: 900, color: '#ef4444' }}>+12d</span>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="4"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
-                    </div>
-                    <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#ef4444', marginTop: '1rem' }}>+2d</div>
-                    <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#3b82f6', marginTop: '4px', textDecoration: 'underline', cursor: 'pointer' }}>View Root Cause</div>
-                  </div>
-
-                  <div>
-                    <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#00ffd1' }}>87%</div>
-                    <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#8896ab', marginTop: '2.5rem' }}>Efficiency</div>
-                  </div>
-                </div>
-
-                <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', padding: '0.6rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                  <Icons.Lightning />
-                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#fff' }}>FORECAST: +18% recovery possible if API Node-4 risk is mitigated by Q4 end.</span>
-                </div>
-              </div>
-
-              {/* Resource & Cost Intelligence Engine */}
-              <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '0.85rem', borderRadius: '16px' }}>
-                <h3 style={{ margin: '0 0 2.5rem 0', fontSize: '0.85rem', fontWeight: 800, letterSpacing: '0.1em', color: '#fff' }}>RESOURCE & COST INTELLIGENCE ENGINE</h3>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr>
-                      <th style={{ paddingBottom: '0.75rem', textAlign: 'left', fontSize: '0.65rem', fontWeight: 800, color: '#8896ab', letterSpacing: '0.1em' }}>METRIC</th>
-                      <th style={{ paddingBottom: '0.75rem', textAlign: 'left', fontSize: '0.65rem', fontWeight: 800, color: '#8896ab', letterSpacing: '0.1em' }}>PLANNED</th>
-                      <th style={{ paddingBottom: '0.75rem', textAlign: 'left', fontSize: '0.65rem', fontWeight: 800, color: '#8896ab', letterSpacing: '0.1em' }}>ACTUAL</th>
-                      <th style={{ paddingBottom: '0.75rem', textAlign: 'left', fontSize: '0.65rem', fontWeight: 800, color: '#8896ab', letterSpacing: '0.1em' }}>VARIANCE</th>
-                      <th style={{ paddingBottom: '0.75rem', textAlign: 'left', fontSize: '0.65rem', fontWeight: 800, color: '#8896ab', letterSpacing: '0.1em' }}>TREND</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td style={{ padding: '0.5rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '0.85rem', fontWeight: 800 }}>Budget</td>
-                      <td style={{ padding: '0.5rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '0.85rem', fontWeight: 600, color: '#8896ab' }}>€351.0K</td>
-                      <td style={{ padding: '0.5rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '0.85rem', fontWeight: 900 }}>€219.0K</td>
-                      <td style={{ padding: '0.5rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '0.75rem', fontWeight: 800, color: '#00ffd1', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><div style={{ width: 6, height: 6, borderRadius: '50%', background: '#00ffd1' }}/>Under</td>
-                      <td style={{ padding: '0.5rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}><div style={{ width: '30px', height: '2px', background: '#00ffd1' }} /></td>
-                    </tr>
-                    <tr>
-                      <td style={{ padding: '0.5rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '0.85rem', fontWeight: 800 }}>Hours</td>
-                      <td style={{ padding: '0.5rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '0.85rem', fontWeight: 600, color: '#8896ab' }}>783</td>
-                      <td style={{ padding: '0.5rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '0.85rem', fontWeight: 900 }}>674</td>
-                      <td style={{ padding: '0.5rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '0.75rem', fontWeight: 800, color: '#00ffd1', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><div style={{ width: 6, height: 6, borderRadius: '50%', background: '#00ffd1' }}/>Efficient</td>
-                      <td style={{ padding: '0.5rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}><div style={{ width: '30px', height: '2px', background: '#3b82f6' }} /></td>
-                    </tr>
-                    <tr>
-                      <td style={{ padding: '0.5rem 0', fontSize: '0.85rem', fontWeight: 800 }}>Cost</td>
-                      <td style={{ padding: '0.5rem 0', fontSize: '0.85rem', fontWeight: 600, color: '#8896ab' }}>€38.6K</td>
-                      <td style={{ padding: '0.5rem 0', fontSize: '0.85rem', fontWeight: 900 }}>€31.2K</td>
-                      <td style={{ padding: '0.5rem 0', fontSize: '0.75rem', fontWeight: 800, color: '#00ffd1', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><div style={{ width: 6, height: 6, borderRadius: '50%', background: '#00ffd1' }}/>Controlled</td>
-                      <td style={{ padding: '0.5rem 0' }}><div style={{ width: '30px', height: '2px', background: '#00ffd1' }} /></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-            </div>
-
-            {/* Bottom Section */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: '1rem' }}>
-              
-              {/* Mission Delivery Path */}
-              <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '0.85rem', borderRadius: '16px' }}>
-                <h3 style={{ margin: '0 0 3rem 0', fontSize: '0.85rem', fontWeight: 800, letterSpacing: '0.1em', color: '#fff' }}>MISSION DELIVERY PATH (HORIZONTAL VIEW)</h3>
-                
-                <div style={{ display: 'flex', alignItems: 'flex-start', position: 'relative', paddingBottom: '0.5rem' }}>
-                  {/* Background Line */}
-                  <div style={{ position: 'absolute', top: '16px', left: '40px', right: '40px', height: '2px', background: 'linear-gradient(90deg, #00ffd1 25%, #3b82f6 75%)', zIndex: 1 }} />
-                  
-                  {/* Node 1 */}
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', zIndex: 2 }}>
-                    <div style={{ position: 'absolute', top: '-25px', fontSize: '0.6rem', fontWeight: 900, color: '#8896ab', letterSpacing: '0.1em' }}>15 SEP</div>
-                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#050608', border: '2px solid #00ffd1', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#00ffd1', marginBottom: '1rem', boxShadow: '0 0 15px rgba(0, 255, 209, 0.3)' }}><Icons.Check /></div>
-                    <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '0.6rem', borderRadius: '12px', width: '85%' }}>
-                      <div style={{ fontSize: '0.85rem', fontWeight: 800, marginBottom: '0.25rem' }}>Kick-off</div>
-                      <div style={{ fontSize: '0.65rem', color: '#8896ab', marginBottom: '1rem' }}>Started on time</div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 800 }}>
-                        <span style={{ color: '#00ffd1' }}>0d</span>
-                        <span style={{ color: '#00ffd1' }}>0%</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Node 2 */}
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', zIndex: 2 }}>
-                    <div style={{ position: 'absolute', top: '-25px', fontSize: '0.6rem', fontWeight: 900, color: '#8896ab', letterSpacing: '0.1em' }}>10 OCT</div>
-                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#050608', border: '2px solid #3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6', marginBottom: '1rem', boxShadow: '0 0 15px rgba(59, 130, 246, 0.3)' }}><Icons.Lightning /></div>
-                    <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '0.6rem', borderRadius: '12px', width: '85%' }}>
-                      <div style={{ fontSize: '0.85rem', fontWeight: 800, marginBottom: '0.25rem' }}>API Integration</div>
-                      <div style={{ fontSize: '0.65rem', color: '#8896ab', marginBottom: '1rem' }}>Load balancer scaling issue</div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 800 }}>
-                        <span style={{ color: '#3b82f6' }}>+2d</span>
-                        <span style={{ color: '#ef4444' }}>-1.2%</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Node 3 */}
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', zIndex: 2 }}>
-                    <div style={{ position: 'absolute', top: '-25px', fontSize: '0.6rem', fontWeight: 900, color: '#8896ab', letterSpacing: '0.1em' }}>24 OCT</div>
-                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#050608', border: '2px solid #3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6', marginBottom: '1rem', boxShadow: '0 0 15px rgba(59, 130, 246, 0.3)' }}><Icons.Lightning /></div>
-                    <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '0.6rem', borderRadius: '12px', width: '85%' }}>
-                      <div style={{ fontSize: '0.85rem', fontWeight: 800, marginBottom: '0.25rem' }}>Core System</div>
-                      <div style={{ fontSize: '0.65rem', color: '#8896ab', marginBottom: '1rem' }}>Auth provider latency</div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 800 }}>
-                        <span style={{ color: '#3b82f6' }}>+4d</span>
-                        <span style={{ color: '#ef4444' }}>-1.8%</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Node 4 */}
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', zIndex: 2 }}>
-                    <div style={{ position: 'absolute', top: '-25px', fontSize: '0.6rem', fontWeight: 900, color: '#8896ab', letterSpacing: '0.1em' }}>04 NOV</div>
-                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#050608', border: '2px solid #FFB347', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFB347', marginBottom: '1rem', boxShadow: '0 0 15px rgba(255, 179, 71, 0.3)' }}><Icons.Clock /></div>
-                    <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '0.6rem', borderRadius: '12px', width: '85%' }}>
-                      <div style={{ fontSize: '0.85rem', fontWeight: 800, marginBottom: '0.25rem' }}>Beta Test</div>
-                      <div style={{ fontSize: '0.65rem', color: '#8896ab', marginBottom: '1rem' }}>QA Resource bottleneck</div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 800 }}>
-                        <span style={{ color: '#FFB347' }}>Risk</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Team Stress & Load Matrix */}
-              <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '0.85rem', borderRadius: '16px' }}>
-                <h3 style={{ margin: '0 0 2.5rem 0', fontSize: '0.85rem', fontWeight: 800, letterSpacing: '0.1em', color: '#fff' }}>TEAM STRESS & LOAD MATRIX</h3>
-                
-                <div style={{ marginBottom: '1.25rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.75rem', fontWeight: 800 }}>
-                    <span>Engineering</span>
-                    <span style={{ color: '#ef4444' }}>Critical (92%)</span>
-                  </div>
-                  <div style={{ width: '100%', height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px' }}>
-                    <div style={{ width: '92%', height: '100%', background: '#ef4444', borderRadius: '4px' }} />
-                  </div>
-                </div>
-
-                <div style={{ marginBottom: '1.25rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.75rem', fontWeight: 800 }}>
-                    <span>Design</span>
-                    <span style={{ color: '#FFB347' }}>Normal (60%)</span>
-                  </div>
-                  <div style={{ width: '100%', height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px' }}>
-                    <div style={{ width: '60%', height: '100%', background: '#FFB347', borderRadius: '4px' }} />
-                  </div>
-                </div>
-
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.75rem', fontWeight: 800 }}>
-                    <span>QA</span>
-                    <span style={{ color: '#00ffd1' }}>Under (45%)</span>
-                  </div>
-                  <div style={{ width: '100%', height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px' }}>
-                    <div style={{ width: '45%', height: '100%', background: '#00ffd1', borderRadius: '4px' }} />
-                  </div>
-                </div>
-
-              </div>
-
-            </div>
-          </motion.div>
-        )}
-
-        {/* TAB CONTENT: OVERVIEW */}
-        {activeTab === 'OVERVIEW' && (
-          <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}>
-            <div style={{ marginBottom: '1.5rem' }}>
-              <h1 style={{ fontSize: '1.2rem', fontWeight: 900, margin: 0, letterSpacing: '-0.02em' }}>GLOBAL STRATEGIC <span style={{ color: '#3b82f6' }}>OVERVIEW</span></h1>
-            </div>
-            
+            {/* Premium Dashboard Widgets */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
-              <div style={{ background: '#0d1117', borderRadius: '12px', padding: '0.85rem', border: '1px solid rgba(255,255,255,0.05)' }}>
-                <div style={{ fontSize: '0.6rem', fontWeight: 800, color: '#8896ab', letterSpacing: '0.1em', marginBottom: '0.5rem' }}>TOTAL ACTIVE MISSIONS</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#3b82f6' }}>72</div>
-                <div style={{ fontSize: '0.65rem', color: '#8896ab', marginTop: '0.25rem' }}>Across 3 Global Regions</div>
-              </div>
-              <div style={{ background: '#0d1117', borderRadius: '12px', padding: '0.85rem', border: '1px solid rgba(255,255,255,0.05)' }}>
-                <div style={{ fontSize: '0.6rem', fontWeight: 800, color: '#8896ab', letterSpacing: '0.1em', marginBottom: '0.5rem' }}>REVENUE DEPLOYED</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#00ffd1' }}>₹142.5L</div>
-                <div style={{ fontSize: '0.65rem', color: '#8896ab', marginTop: '0.25rem' }}>Verified active execution</div>
-              </div>
-              <div style={{ background: '#0d1117', borderRadius: '12px', padding: '0.85rem', border: '1px solid rgba(255,255,255,0.05)' }}>
-                <div style={{ fontSize: '0.6rem', fontWeight: 800, color: '#8896ab', letterSpacing: '0.1em', marginBottom: '0.5rem' }}>STRATEGIC MARGIN</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#FFB347' }}>34.8%</div>
-                <div style={{ fontSize: '0.65rem', color: '#8896ab', marginTop: '0.25rem' }}>Blended global average</div>
-              </div>
-              <div style={{ background: '#0d1117', borderRadius: '12px', padding: '0.85rem', border: '1px solid rgba(255,255,255,0.05)' }}>
-                <div style={{ fontSize: '0.6rem', fontWeight: 800, color: '#8896ab', letterSpacing: '0.1em', marginBottom: '0.5rem' }}>MISSION SUCCESS</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#06b6d4' }}>98.2%</div>
-                <div style={{ fontSize: '0.65rem', color: '#8896ab', marginTop: '0.25rem' }}>SLA adherence rate</div>
-              </div>
+              {[
+                { label: 'ACTION REQUIRED', count: (Array.isArray(requests) ? requests : []).filter(r => r.status === 'PENDING').length, grad: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', shadow: 'rgba(37, 99, 235, 0.3)', icon: <Icons.Bell /> },
+                { label: 'CRITICAL ESCALATIONS', count: (Array.isArray(escalations) ? escalations : []).filter(e => e.status === 'OPEN').length, grad: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)', shadow: 'rgba(239, 68, 68, 0.3)', icon: <Icons.Overview /> },
+                { label: 'RESOLVED REQUESTS', count: (Array.isArray(requests) ? requests : []).filter(r => r.status === 'APPROVED').length, grad: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', shadow: 'rgba(16, 185, 129, 0.3)', icon: <Icons.CheckSquare /> },
+                { label: 'AT-RISK PORTFOLIO', count: (Array.isArray(portfolio) ? portfolio : []).filter(p => p.status === 'Orange' || p.status === 'Red').length, grad: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', shadow: 'rgba(245, 158, 11, 0.3)', icon: <Icons.Cube /> }
+              ].map((stat, i) => (
+                <motion.div 
+                  key={i}
+                  whileHover={{ y: -8, scale: 1.02 }}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.1, duration: 0.4 }}
+                  style={{ 
+                    background: stat.grad, 
+                    padding: '0.75rem 1rem', 
+                    borderRadius: '12px', 
+                    color: 'white',
+                    boxShadow: `0 4px 6px -1px ${stat.shadow}`,
+                    position: 'relative',
+                    overflow: 'hidden',
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    minHeight: '40px'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', zIndex: 1 }}>
+                    <div style={{ opacity: 0.8, display: 'flex', alignItems: 'center' }}>{stat.icon}</div>
+                    <div style={{ fontSize: '0.65rem', fontWeight: 800, opacity: 0.9, letterSpacing: '0.05em' }}>{stat.label}</div>
+                  </div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 900, lineHeight: 1, zIndex: 1, textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>{stat.count}</div>
+                </motion.div>
+              ))}
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-              <div className="vp-glass" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '1.25rem', borderRadius: '16px' }}>
-                <h3 style={{ margin: '0 0 1.5rem 0', fontSize: '0.85rem', fontWeight: 800, letterSpacing: '0.1em', color: '#fff' }}>REGIONAL DEPLOYMENT CAPACITY</h3>
-                
-                <div style={{ marginBottom: '1.25rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.75rem', fontWeight: 800 }}>
-                    <span>North America (D2)</span>
-                    <span style={{ color: '#00ffd1' }}>Optimal (85%)</span>
-                  </div>
-                  <div style={{ width: '100%', height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px' }}>
-                    <div style={{ width: '85%', height: '100%', background: '#00ffd1', borderRadius: '4px' }} />
-                  </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem' }}>
+              {/* Active Escalations Section */}
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                  <div style={{ width: '4px', height: '20px', background: '#ef4444', borderRadius: '4px' }}></div>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>Active Escalations</h3>
+                  <div style={{ background: '#fef2f2', color: '#ef4444', padding: '0.2rem 0.5rem', borderRadius: '999px', fontSize: '0.7rem', fontWeight: 700 }}>Immediate Attention Needed</div>
                 </div>
-
-                <div style={{ marginBottom: '1.25rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.75rem', fontWeight: 800 }}>
-                    <span>Europe (D3)</span>
-                    <span style={{ color: '#3b82f6' }}>Available (62%)</span>
-                  </div>
-                  <div style={{ width: '100%', height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px' }}>
-                    <div style={{ width: '62%', height: '100%', background: '#3b82f6', borderRadius: '4px' }} />
-                  </div>
+                <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                      <thead style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                          <tr>
+                              <th style={{ padding: '0.4rem 0.75rem', fontSize: '0.6rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Project</th>
+                              <th style={{ padding: '0.4rem 0.75rem', fontSize: '0.6rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Trigger Reason</th>
+                              <th style={{ padding: '0.4rem 0.75rem', fontSize: '0.6rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Margin Impact</th>
+                              <th style={{ padding: '0.4rem 0.75rem', fontSize: '0.6rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Date Raised</th>
+                              <th style={{ padding: '0.4rem 0.75rem', fontSize: '0.6rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Status</th>
+                          </tr>
+                      </thead>
+                      <tbody>
+                          {(!escalations || !Array.isArray(escalations) || escalations.length === 0) && (
+                            <tr><td colSpan="5" style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                                <div style={{ padding: '1rem', background: '#f1f5f9', borderRadius: '50%', color: '#cbd5e1' }}><Icons.Check /></div>
+                                <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#475569' }}>No active escalations requiring your attention.</div>
+                              </div>
+                            </td></tr>
+                          )}
+                          {(Array.isArray(escalations) ? escalations : []).map((e, i) => (
+                              <motion.tr 
+                                key={i} 
+                                whileHover={{ background: '#f8fafc', scale: 1.002 }}
+                                style={{ borderBottom: '1px solid #e2e8f0', transition: 'all 0.2s' }}
+                              >
+                                  <td style={{ padding: '0.4rem 0.75rem' }}>
+                                    <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0f172a' }}>{e.project_name}</div>
+                                  </td>
+                                  <td style={{ padding: '0.4rem 0.75rem' }}>
+                                    <span style={{ background: '#fef2f2', color: '#dc2626', padding: '0.2rem 0.4rem', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700, display: 'inline-block', border: '1px solid #fecaca' }}>
+                                      {e.trigger_reason}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: '0.4rem 0.75rem' }}>
+                                    <div style={{ display: 'flex', gap: '1rem', fontSize: '0.7rem' }}>
+                                      <div><span style={{ color: '#64748b' }}>Target:</span> <span style={{ fontWeight: 700 }}>{e.target_margin}%</span></div>
+                                      <div><span style={{ color: '#64748b' }}>Risk:</span> <span style={{ fontWeight: 800, color: '#ef4444' }}>{e.current_margin}%</span></div>
+                                    </div>
+                                  </td>
+                                  <td style={{ padding: '0.4rem 0.75rem', fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>
+                                    {new Date(e.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                  </td>
+                                  <td style={{ padding: '0.4rem 0.75rem' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                      <span style={{ position: 'relative', borderRadius: '50%', height: '6px', width: '6px', background: e.status === 'OPEN' ? '#ef4444' : '#10b981' }}></span>
+                                      <span style={{ fontSize: '0.7rem', fontWeight: 800, color: e.status === 'OPEN' ? '#ef4444' : '#10b981' }}>{e.status}</span>
+                                    </div>
+                                  </td>
+                              </motion.tr>
+                          ))}
+                      </tbody>
+                  </table>
                 </div>
+              </motion.div>
 
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.75rem', fontWeight: 800 }}>
-                    <span>APAC (GLOBAL)</span>
-                    <span style={{ color: '#ef4444' }}>Critical (98%)</span>
-                  </div>
-                  <div style={{ width: '100%', height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px' }}>
-                    <div style={{ width: '98%', height: '100%', background: '#ef4444', borderRadius: '4px' }} />
-                  </div>
+              {/* Pending Requests Section */}
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                  <div style={{ width: '4px', height: '20px', background: '#3b82f6', borderRadius: '4px' }}></div>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>Pending Approval Queue</h3>
+                  <div style={{ background: '#eff6ff', color: '#2563eb', padding: '0.2rem 0.5rem', borderRadius: '999px', fontSize: '0.7rem', fontWeight: 700 }}>Management Review</div>
                 </div>
-              </div>
-
-              <div className="vp-glass" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '1.25rem', borderRadius: '16px' }}>
-                <h3 style={{ margin: '0 0 1.5rem 0', fontSize: '0.85rem', fontWeight: 800, letterSpacing: '0.1em', color: '#fff' }}>RECENT STRATEGIC MISSIONS</h3>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', borderLeft: '3px solid #00ffd1' }}>
-                    <div>
-                      <div style={{ fontSize: '0.8rem', fontWeight: 800 }}>Mission 121212</div>
-                      <div style={{ fontSize: '0.65rem', color: '#8896ab' }}>Global Region • Revenue: ₹10.9L</div>
-                    </div>
-                    <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#00ffd1', background: 'rgba(0,255,209,0.1)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>Verified</div>
-                  </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', borderLeft: '3px solid #FFB347' }}>
-                    <div>
-                      <div style={{ fontSize: '0.8rem', fontWeight: 800 }}>Project Phoenix</div>
-                      <div style={{ fontSize: '0.65rem', color: '#8896ab' }}>North America (D2) • Revenue: ₹45.9L</div>
-                    </div>
-                    <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#FFB347', background: 'rgba(255,179,71,0.1)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>Data Audit</div>
-                  </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', borderLeft: '3px solid #3b82f6' }}>
-                    <div>
-                      <div style={{ fontSize: '0.8rem', fontWeight: 800 }}>Horizon Migration</div>
-                      <div style={{ fontSize: '0.65rem', color: '#8896ab' }}>Europe (D3) • Revenue: €351.0K</div>
-                    </div>
-                    <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#3b82f6', background: 'rgba(59,130,246,0.1)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>Kick-off</div>
-                  </div>
+                <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                      <thead style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                          <tr>
+                              <th style={{ padding: '0.4rem 0.75rem', fontSize: '0.6rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Project</th>
+                              <th style={{ padding: '0.4rem 0.75rem', fontSize: '0.6rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Request Type</th>
+                              <th style={{ padding: '0.4rem 0.75rem', fontSize: '0.6rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Details & Context</th>
+                              <th style={{ padding: '0.4rem 0.75rem', fontSize: '0.6rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Status</th>
+                              <th style={{ padding: '0.4rem 0.75rem', fontSize: '0.6rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', textTransform: 'uppercase', textAlign: 'right' }}>Action</th>
+                          </tr>
+                      </thead>
+                      <tbody>
+                          {(!requests || !Array.isArray(requests) || requests.length === 0) && (
+                            <tr><td colSpan="5" style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                                <div style={{ padding: '1rem', background: '#f1f5f9', borderRadius: '50%', color: '#cbd5e1' }}><Icons.CheckSquare /></div>
+                                <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#475569' }}>Action queue is currently empty.</div>
+                              </div>
+                            </td></tr>
+                          )}
+                          {(Array.isArray(requests) ? requests : []).map((r, i) => (
+                              <motion.tr 
+                                key={i} 
+                                whileHover={{ background: '#f8fafc', scale: 1.002 }}
+                                style={{ borderBottom: '1px solid #e2e8f0', transition: 'all 0.2s' }}
+                              >
+                                  <td style={{ padding: '0.4rem 0.75rem' }}>
+                                    <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0f172a' }}>{r.project_name}</div>
+                                  </td>
+                                  <td style={{ padding: '0.4rem 0.75rem' }}>
+                                    <span style={{ 
+                                      background: r.type === 'ADDITIONAL_HOURS' ? '#eff6ff' : '#f5f3ff', 
+                                      color: r.type === 'ADDITIONAL_HOURS' ? '#2563eb' : '#7c3aed', 
+                                      padding: '0.2rem 0.4rem', 
+                                      borderRadius: '4px', 
+                                      fontSize: '0.7rem', 
+                                      fontWeight: 700, 
+                                      display: 'inline-block',
+                                      border: `1px solid ${r.type === 'ADDITIONAL_HOURS' ? '#bfdbfe' : '#ddd6fe'}`
+                                    }}>
+                                      {r.type.replace('_', ' ')}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: '0.4rem 0.75rem' }}>
+                                      <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#1e293b', marginBottom: '0.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        {r.type === 'ADDITIONAL_HOURS' ? `+${r.requested_additional_hours} Hours` : `Extend to ${new Date(r.requested_end_date).toLocaleDateString()}`}
+                                        {r.node_id && r.node_id !== 'PROJECT_LEVEL' && (
+                                          <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#2563eb', background: '#eff6ff', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>
+                                            {r.node_id}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div style={{ fontSize: '0.7rem', color: '#64748b', fontStyle: 'italic', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                        "{r.reason}"
+                                      </div>
+                                  </td>
+                                  <td style={{ padding: '0.4rem 0.75rem' }}>
+                                    <span style={{ 
+                                      display: 'inline-flex', alignItems: 'center', gap: '0.2rem',
+                                      padding: '0.2rem 0.4rem', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 800,
+                                      background: r.status === 'PENDING' ? '#fffbeb' : r.status === 'APPROVED' ? '#ecfdf5' : '#fef2f2',
+                                      color: r.status === 'PENDING' ? '#d97706' : r.status === 'APPROVED' ? '#059669' : '#dc2626',
+                                      border: `1px solid ${r.status === 'PENDING' ? '#fde68a' : r.status === 'APPROVED' ? '#a7f3d0' : '#fecaca'}`
+                                    }}>
+                                      {r.status}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: '0.4rem 0.75rem', textAlign: 'right' }}>
+                                      {r.status === 'PENDING' ? (
+                                          <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'flex-end' }}>
+                                              <motion.button 
+                                                whileHover={{ scale: 1.05 }}
+                                                whileTap={{ scale: 0.95 }}
+                                                onClick={() => handleRequestAction(r.id, 'APPROVE')} 
+                                                style={{ background: '#10b981', color: '#fff', border: 'none', padding: '0.3rem 0.6rem', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', boxShadow: '0 2px 4px rgba(16,185,129,0.2)' }}
+                                              >
+                                                Approve
+                                              </motion.button>
+                                              <motion.button 
+                                                whileHover={{ scale: 1.05 }}
+                                                whileTap={{ scale: 0.95 }}
+                                                onClick={() => handleRequestAction(r.id, 'REJECT')} 
+                                                style={{ background: '#fff', color: '#ef4444', border: '1px solid #ef4444', padding: '0.3rem 0.6rem', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', boxShadow: '0 1px 2px rgba(239,68,68,0.05)' }}
+                                              >
+                                                Reject
+                                              </motion.button>
+                                          </div>
+                                      ) : (
+                                        <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700 }}>Resolved</span>
+                                      )}
+                                  </td>
+                              </motion.tr>
+                          ))}
+                      </tbody>
+                  </table>
                 </div>
-              </div>
+              </motion.div>
             </div>
           </motion.div>
         )}
-
-        {/* TAB CONTENT: RESOURCE INTELLIGENCE */}
-        {activeTab === 'RESOURCE_INTELLIGENCE' && (
-          <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}>
-            <div style={{ marginBottom: '1.5rem' }}>
-              <h1 style={{ fontSize: '1.2rem', fontWeight: 900, margin: 0, letterSpacing: '-0.02em' }}>RESOURCE <span style={{ color: '#3b82f6' }}>INTELLIGENCE</span> COMMAND</h1>
-            </div>
-            
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
-              <div style={{ background: '#0d1117', borderRadius: '12px', padding: '0.85rem', border: '1px solid rgba(255,255,255,0.05)' }}>
-                <div style={{ fontSize: '0.6rem', fontWeight: 800, color: '#8896ab', letterSpacing: '0.1em', marginBottom: '0.5rem' }}>GLOBAL UTILIZATION</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#ef4444' }}>92%</div>
-                <div style={{ fontSize: '0.65rem', color: '#8896ab', marginTop: '0.25rem' }}>High risk of burnout</div>
-              </div>
-              <div style={{ background: '#0d1117', borderRadius: '12px', padding: '0.85rem', border: '1px solid rgba(255,255,255,0.05)' }}>
-                <div style={{ fontSize: '0.6rem', fontWeight: 800, color: '#8896ab', letterSpacing: '0.1em', marginBottom: '0.5rem' }}>CRITICAL LOAD</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#FFB347' }}>12 Engineers</div>
-                <div style={{ fontSize: '0.65rem', color: '#8896ab', marginTop: '0.25rem' }}>Allocated &gt;110% capacity</div>
-              </div>
-              <div style={{ background: '#0d1117', borderRadius: '12px', padding: '0.85rem', border: '1px solid rgba(255,255,255,0.05)' }}>
-                <div style={{ fontSize: '0.6rem', fontWeight: 800, color: '#8896ab', letterSpacing: '0.1em', marginBottom: '0.5rem' }}>BENCH AVAILABILITY</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#00ffd1' }}>3 Available</div>
-                <div style={{ fontSize: '0.65rem', color: '#8896ab', marginTop: '0.25rem' }}>Ready for deployment</div>
-              </div>
+      
+        {activeTab === 'INTELLIGENCE' && (
+          <div style={{ padding: '0 1rem', maxWidth: '800px', margin: '0 auto' }}>
+            <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <h1 style={{ fontSize: '1.5rem', fontWeight: 800, margin: 0, color: '#0f172a' }}>Mission Intelligence Feed</h1>
+                  <p style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.5rem' }}>Automated executive updates based on live project telemetry.</p>
+                </div>
+                <select 
+                    value={feedFilter} 
+                    onChange={e => setFeedFilter(e.target.value)}
+                    style={{ padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.8rem', outline: 'none' }}
+                >
+                    <option value="">All Events</option>
+                    <option value="MARGIN">Margin Events</option>
+                    <option value="HOURS">Hours Events</option>
+                    <option value="ESCALATION">Escalations</option>
+                    <option value="APPROVAL">Approvals</option>
+                    <option value="ASSIGNMENT">Assignments</option>
+                </select>
             </div>
 
-            <div className="vp-glass" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '1.25rem', borderRadius: '16px' }}>
-              <h3 style={{ margin: '0 0 1.5rem 0', fontSize: '0.85rem', fontWeight: 800, letterSpacing: '0.1em', color: '#fff' }}>GLOBAL RESOURCE ALLOCATION HEATMAP</h3>
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                  <thead>
-                    <tr>
-                      <th style={{ paddingBottom: '0.75rem', fontSize: '0.65rem', fontWeight: 800, color: '#8896ab', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>RESOURCE NAME</th>
-                      <th style={{ paddingBottom: '0.75rem', fontSize: '0.65rem', fontWeight: 800, color: '#8896ab', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>PRIMARY ROLE</th>
-                      <th style={{ paddingBottom: '0.75rem', fontSize: '0.65rem', fontWeight: 800, color: '#8896ab', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>ACTIVE MISSIONS</th>
-                      <th style={{ paddingBottom: '0.75rem', fontSize: '0.65rem', fontWeight: 800, color: '#8896ab', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>ASSIGNED TASKS</th>
-                      <th style={{ paddingBottom: '0.75rem', fontSize: '0.65rem', fontWeight: 800, color: '#8896ab', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>UTILIZATION</th>
-                      <th style={{ paddingBottom: '0.75rem', fontSize: '0.65rem', fontWeight: 800, color: '#8896ab', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>STATUS</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td style={{ padding: '0.75rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', fontWeight: 800 }}>Santhosh B</td>
-                      <td style={{ padding: '0.75rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', color: '#d1d5db' }}>Solutions Architect</td>
-                      <td style={{ padding: '0.75rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', color: '#d1d5db' }}>sample(Sheet1), Project Phoenix</td>
-                      <td style={{ padding: '0.75rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', color: '#d1d5db' }}>Architecture Design, API Integration</td>
-                      <td style={{ padding: '0.75rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', fontWeight: 800, color: '#ef4444' }}>120%</td>
-                      <td style={{ padding: '0.75rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', fontWeight: 800, color: '#ef4444' }}>Overloaded</td>
-                    </tr>
-                    <tr>
-                      <td style={{ padding: '0.75rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', fontWeight: 800 }}>Megha V</td>
-                      <td style={{ padding: '0.75rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', color: '#d1d5db' }}>Integration Specialist</td>
-                      <td style={{ padding: '0.75rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', color: '#d1d5db' }}>sample(Sheet1)</td>
-                      <td style={{ padding: '0.75rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', color: '#d1d5db' }}>Data Audit, Load Balancer Config</td>
-                      <td style={{ padding: '0.75rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', fontWeight: 800, color: '#FFB347' }}>95%</td>
-                      <td style={{ padding: '0.75rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', fontWeight: 800, color: '#FFB347' }}>Busy</td>
-                    </tr>
-                    <tr>
-                      <td style={{ padding: '0.75rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', fontWeight: 800 }}>Sarah K</td>
-                      <td style={{ padding: '0.75rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', color: '#d1d5db' }}>PMO</td>
-                      <td style={{ padding: '0.75rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', color: '#d1d5db' }}>sample(Sheet1), Horizon</td>
-                      <td style={{ padding: '0.75rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', color: '#d1d5db' }}>Governance, SLA Tracking</td>
-                      <td style={{ padding: '0.75rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', fontWeight: 800, color: '#FFB347' }}>88%</td>
-                      <td style={{ padding: '0.75rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', fontWeight: 800, color: '#FFB347' }}>Busy</td>
-                    </tr>
-                    <tr>
-                      <td style={{ padding: '0.75rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', fontWeight: 800 }}>Alex M</td>
-                      <td style={{ padding: '0.75rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', color: '#d1d5db' }}>Consultant</td>
-                      <td style={{ padding: '0.75rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', color: '#d1d5db' }}>Global Migration</td>
-                      <td style={{ padding: '0.75rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', color: '#d1d5db' }}>Validation Scripts</td>
-                      <td style={{ padding: '0.75rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', fontWeight: 800, color: '#00ffd1' }}>45%</td>
-                      <td style={{ padding: '0.75rem 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', fontWeight: 800, color: '#00ffd1' }}>Available</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {(!feed || !Array.isArray(feed) || feed.length === 0) ? (
+                    <div style={{ padding: '3rem', textAlign: 'center', color: '#64748b', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px' }}>No intelligence events match criteria.</div>
+                ) : (Array.isArray(feed) ? feed : []).map((e, i) => (
+                    <div key={i} style={{ 
+                        background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.5rem',
+                        borderLeft: e.priority === 'CRITICAL' ? '4px solid #ef4444' : e.priority === 'WARNING' ? '4px solid #f59e0b' : e.priority === 'SUCCESS' ? '4px solid #10b981' : '4px solid #3b82f6',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <div style={{ 
+                                    width: '10px', height: '10px', borderRadius: '50%',
+                                    background: e.priority === 'CRITICAL' ? '#ef4444' : e.priority === 'WARNING' ? '#f59e0b' : e.priority === 'SUCCESS' ? '#10b981' : '#3b82f6' 
+                                }}></div>
+                                <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em' }}>{e.category} EVENT</span>
+                            </div>
+                            <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{new Date(e.created_at).toLocaleString()}</div>
+                        </div>
+                        
+                        <div style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '0.2rem' }}>Project: <span style={{ fontWeight: 700, color: '#0f172a' }}>{e.project_name || 'N/A'}</span></div>
+                        {e.sap_node_id && <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '1rem' }}>Node: {e.sap_node_id} ({e.sap_node_name})</div>}
+                        
+                        <div style={{ fontSize: '1.1rem', fontWeight: 600, color: '#0f172a', marginBottom: '1.5rem' }}>{e.message}</div>
+                        
+                        {e.metrics && Object.keys(e.metrics).length > 0 && (
+                            <div style={{ display: 'flex', gap: '2rem', background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                                {Object.entries(e.metrics).map(([k, v], idx) => (
+                                    <div key={idx}>
+                                        <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>{k.toUpperCase()}</div>
+                                        <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>{v}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                ))}
             </div>
-          </motion.div>
+          </div>
         )}
 
       </div>
+
+      {/* Floating AI ChatBox (Elite Redesign) */}
+      <AnimatePresence>
+        {isChatOpen ? (
+          <motion.div 
+            initial={{ opacity: 0, y: 50, scale: 0.9 }} 
+            animate={{ opacity: 1, y: 0, scale: 1 }} 
+            exit={{ opacity: 0, y: 50, scale: 0.9 }}
+            style={{ position: 'fixed', bottom: '2rem', right: '2rem', width: '320px', height: '480px', background: 'rgba(255, 255, 255, 0.98)', backdropFilter: 'blur(20px)', borderRadius: '16px', boxShadow: '0 20px 40px -12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 1000 }}
+          >
+            {/* Header */}
+            <div style={{ padding: '0.8rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div style={{ position: 'relative', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <motion.div animate={{ rotate: 360 }} transition={{ duration: 8, repeat: Infinity, ease: 'linear' }} style={{ position: 'absolute', width: '100%', height: '100%', borderRadius: '50%', border: '1px dashed #3b82f6', opacity: 0.5 }}></motion.div>
+                  <div style={{ width: '8px', height: '8px', background: '#3b82f6', borderRadius: '50%', boxShadow: '0 0 10px rgba(59, 130, 246, 0.5)' }}></div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 900, color: '#0f172a', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>DIGITRAC AI <span style={{color: '#3b82f6', display: 'flex'}}><Icons.Bot /></span></div>
+                </div>
+              </div>
+              <button onClick={() => setIsChatOpen(false)} style={{ background: 'transparent', border: 'none', color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </button>
+            </div>
+
+            {/* Chat Body */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {chatMessages.map((msg, i) => (
+                <div key={i} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
+                  <div style={{ 
+                    maxWidth: '85%', 
+                    padding: '0.6rem 0.8rem', 
+                    borderRadius: '12px', 
+                    fontSize: '0.75rem', 
+                    lineHeight: '1.5',
+                    background: msg.role === 'user' ? '#3b82f6' : '#f8fafc',
+                    color: msg.role === 'user' ? '#fff' : '#0f172a',
+                    border: msg.role === 'user' ? 'none' : '1px solid #e2e8f0',
+                    borderBottomRightRadius: msg.role === 'user' ? '4px' : '12px',
+                    borderBottomLeftRadius: msg.role === 'ai' ? '4px' : '12px',
+                    boxShadow: msg.role === 'user' ? '0 4px 12px rgba(59,130,246,0.2)' : '0 2px 4px rgba(0,0,0,0.02)'
+                  }}>
+                    {msg.role === 'ai' ? <TypewriterText text={msg.content} /> : msg.content}
+                  </div>
+                </div>
+              ))}
+              {isChatLoading && (
+                <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                  <div style={{ padding: '0.6rem 0.8rem', borderRadius: '12px', background: '#f8fafc', border: '1px solid #e2e8f0', display: 'flex', gap: '0.2rem', alignItems: 'center' }}>
+                    <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1, repeat: Infinity, delay: 0 }} style={{ width: '4px', height: '4px', background: '#94a3b8', borderRadius: '50%' }}></motion.div>
+                    <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1, repeat: Infinity, delay: 0.2 }} style={{ width: '4px', height: '4px', background: '#94a3b8', borderRadius: '50%' }}></motion.div>
+                    <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1, repeat: Infinity, delay: 0.4 }} style={{ width: '4px', height: '4px', background: '#94a3b8', borderRadius: '50%' }}></motion.div>
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Input Area / Suggested Questions */}
+            <div style={{ padding: '0.8rem', borderTop: '1px solid rgba(0,0,0,0.06)', background: '#f8fafc', position: 'relative' }}>
+              <div style={{ fontSize: '0.6rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '0.6rem', letterSpacing: '0.1em', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>Suggested Queries</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', color: '#94a3b8' }}>
+                  Scroll for more <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', maxHeight: '100px', overflowY: 'auto', paddingRight: '0.2rem', marginBottom: '0.8rem' }}>
+                {suggestedQuestions.map((q, i) => (
+                  <button 
+                    key={i} 
+                    onClick={() => handleChatQuestion(q)}
+                    disabled={isChatLoading}
+                    style={{ textAlign: 'left', background: '#fff', border: '1px solid #e2e8f0', padding: '0.5rem 0.6rem', borderRadius: '6px', fontSize: '0.65rem', color: '#334155', cursor: isChatLoading ? 'not-allowed' : 'pointer', transition: 'all 0.2s', opacity: isChatLoading ? 0.5 : 1 }}
+                    onMouseOver={e => { if(!isChatLoading) { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#0f172a'; e.currentTarget.style.borderColor = '#cbd5e1'; } }}
+                    onMouseOut={e => { if(!isChatLoading) { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#334155'; e.currentTarget.style.borderColor = '#e2e8f0'; } }}
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
+              
+              {/* Custom Input */}
+              <form onSubmit={handleCustomSubmit} style={{ display: 'flex', gap: '0.4rem' }}>
+                <input 
+                  type="text" 
+                  value={chatInput}
+                  onChange={e => setChatInput(e.target.value)}
+                  placeholder="Ask a question..." 
+                  disabled={isChatLoading}
+                  style={{ flex: 1, padding: '0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.75rem', outline: 'none', background: isChatLoading ? '#f1f5f9' : '#fff' }}
+                />
+                <button 
+                  type="submit" 
+                  disabled={isChatLoading || !chatInput.trim()}
+                  style={{ background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '6px', padding: '0 0.8rem', cursor: isChatLoading || !chatInput.trim() ? 'not-allowed' : 'pointer', opacity: isChatLoading || !chatInput.trim() ? 0.5 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                </button>
+              </form>
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, scale: 0 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0 }}
+            onClick={() => setIsChatOpen(true)}
+            style={{ position: 'fixed', bottom: '2rem', right: '2rem', width: '48px', height: '48px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '50%', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6', cursor: 'pointer', zIndex: 1000 }}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* TOAST NOTIFICATION */}
+      {toast.show && (
+        <motion.div 
+          initial={{ opacity: 0, y: 50, x: '-50%' }}
+          animate={{ opacity: 1, y: 0, x: '-50%' }}
+          exit={{ opacity: 0, y: 50, x: '-50%' }}
+          style={{ 
+            position: 'fixed', bottom: '2rem', left: '50%', 
+            background: toast.type === 'error' ? '#ef4444' : '#10b981', 
+            color: '#fff', padding: '1rem 2rem', borderRadius: '8px', 
+            fontWeight: 800, boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', 
+            zIndex: 9999, display: 'flex', alignItems: 'center', gap: '0.75rem',
+            fontSize: '0.9rem'
+          }}
+        >
+          {toast.type === 'success' ? <Icons.Check /> : <Icons.Overview />}
+          {toast.message}
+        </motion.div>
+      )}
     </div>
   );
 }
-

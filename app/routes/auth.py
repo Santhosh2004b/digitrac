@@ -48,7 +48,7 @@ def login(user_in: UserLogin, db: Session = Depends(get_db)):
     access_token = create_access_token(data={"id": user.id, "role": user.role})
     return {
         "access_token": access_token, 
-        "token_type": "bearer", 
+        "token_type": "bearer",
         "role": user.role,
         "is_setup_complete": user.is_setup_complete
     }

@@ -35,7 +35,7 @@ if (!(Test-Path ".git")) {
 $status = git status --porcelain
 
 if ([string]::IsNullOrWhiteSpace($status)) {
-    Write-Host "✅ No new changes detected. Everything is up to date."
+    Write-Host "✅ NoNew changes detected. Everything is up to date."
 } else {
     Write-Host "📌 Changes detected. Staging files..."
     git add .

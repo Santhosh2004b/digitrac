@@ -122,7 +122,7 @@ class DemoSandboxSeeder:
         # 5. Seed Sandbox Projects
         ap1 = ApprovedProject(
             project_name="Acme Cloud Infrastructure Migration",
-            assigned_manager_email="manager@arche.global",
+            assigned_manager_email="manager@digitrac.com",
             approved_by="vp@arche.global",
             full_excel_data={"budget": 500000, "margin": 45}
         )
