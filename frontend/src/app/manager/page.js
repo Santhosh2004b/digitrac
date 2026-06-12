@@ -404,11 +404,11 @@ export default function ManagerDashboard() {
       color:'#1e293b', 
       fontFamily:"'Inter',sans-serif" 
     }}>
-      <style>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         .data-table th:not(:last-child), .data-table td:not(:last-child) {
           border-right: 1px solid rgba(0,0,0,0.06);
         }
-      `}</style>
+      ` }} />
       {/* Elite Main Background Glows */}
       <div style={{ position: 'absolute', top: 0, right: 0, width: '40vw', height: '40vw', background: 'radial-gradient(circle, rgba(59,130,246,0.03) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 0 }}></div>
       <div style={{ position: 'absolute', bottom: 0, left: '260px', width: '30vw', height: '30vw', background: 'radial-gradient(circle, rgba(139,92,246,0.03) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 0 }}></div>
@@ -908,7 +908,7 @@ export default function ManagerDashboard() {
 
                             <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#64748b', marginBottom: '0.25rem', letterSpacing: '0.05em' }}>COST (P / A)</div>
 
-                            <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#0f172a' }}>₹{selectedProject.kpis?.planned_cost?.toLocaleString()} / <span style={{ color: selectedProject.kpis?.cost_variance > 0 ? '#ef4444' : '#059669' }}>₹{selectedProject.kpis?.actual_cost?.toLocaleString()}</span></div>
+                            <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#0f172a' }}>₹{Math.round(selectedProject.kpis?.planned_cost || 0).toLocaleString('en-IN')} / <span style={{ color: selectedProject.kpis?.cost_variance > 0 ? '#ef4444' : '#059669' }}>₹{Math.round(selectedProject.kpis?.actual_cost || 0).toLocaleString('en-IN')}</span></div>
 
                         </div>
 
@@ -1047,7 +1047,7 @@ export default function ManagerDashboard() {
                                     );
                                 })()}
 
-                                <div style={{ background: 'linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%)', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.02)' }}>
+                                <div style={{ background: 'linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%)', borderRadius: '8px', overflow: 'visible', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.02)' }}>
                                 <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', color: '#0f172a' }}>
 
                                 <thead>

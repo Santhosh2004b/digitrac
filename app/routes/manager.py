@@ -60,9 +60,12 @@ def get_my_projects(db: Session = Depends(get_db), current_manager: User = Depen
 
         proj_model = db.query(Project).filter(Project.name == p.project_name).first()
         target_margin_pct = (proj_model.margin_target_pct or 0.0) if proj_model else 0.0
+        if target_margin_pct <= 1.0 and target_margin_pct != 0: target_margin_pct *= 100.0
         original_margin_pct = (proj_model.margin_pct_baseline or 0.0) if proj_model else 0.0
-        sell_value = proj_model.total_sell_price_with_gst if proj_model and (proj_model.total_sell_price_with_gst or 0) > 0 else ((proj_model.sale_value or 0.0) if proj_model else 0.0)
-        baseline_cost = (proj_model.total_cost_price or 0.0) if proj_model else 0.0
+        if original_margin_pct <= 1.0 and original_margin_pct != 0: original_margin_pct *= 100.0
+        
+        sell_value = proj_model.total_sell_price if proj_model and (proj_model.total_sell_price or 0) > 0 else ((proj_model.sale_value or 0.0) if proj_model else 0.0)
+        baseline_cost = (proj_model.total_sell_price - proj_model.margin_amount) if proj_model and proj_model.total_sell_price else ((proj_model.total_cost_price or 0.0) if proj_model else 0.0)
         duration = (proj_model.duration_months or 0.0) if proj_model else 0.0
         
         total_planned_hours = 0.0
@@ -344,8 +347,9 @@ def log_item_hours(
     db.commit()
     
     target_margin_pct = (proj_model.margin_target_pct or 0.0) if proj_model else 0.0
-    sell_value = proj_model.total_sell_price_with_gst if proj_model and (proj_model.total_sell_price_with_gst or 0) > 0 else ((proj_model.sale_value or 0.0) if proj_model else 0.0)
-    baseline_cost = (proj_model.total_cost_price or 0.0) if proj_model else 0.0
+    if target_margin_pct <= 1.0 and target_margin_pct != 0: target_margin_pct *= 100.0
+    sell_value = proj_model.total_sell_price if proj_model and (proj_model.total_sell_price or 0) > 0 else ((proj_model.sale_value or 0.0) if proj_model else 0.0)
+    baseline_cost = (proj_model.total_sell_price - proj_model.margin_amount) if proj_model and proj_model.total_sell_price else ((proj_model.total_cost_price or 0.0) if proj_model else 0.0)
     
     total_planned_hours = 0.0
     total_actual_hours = 0.0
@@ -623,9 +627,11 @@ def get_project_detail(
     # Fetch DB Project for base financials
     proj_model = db.query(Project).filter(Project.name == project.project_name).first()
     target_margin_pct = (proj_model.margin_target_pct or 0.0) if proj_model else 0.0
+    if target_margin_pct <= 1.0 and target_margin_pct != 0: target_margin_pct *= 100.0
     original_margin_pct = (proj_model.margin_pct_baseline or 0.0) if proj_model else 0.0
-    sell_value = proj_model.total_sell_price_with_gst if proj_model and (proj_model.total_sell_price_with_gst or 0) > 0 else ((proj_model.sale_value or 0.0) if proj_model else 0.0)
-    baseline_cost = (proj_model.total_cost_price or 0.0) if proj_model else 0.0
+    if original_margin_pct <= 1.0 and original_margin_pct != 0: original_margin_pct *= 100.0
+    sell_value = proj_model.total_sell_price if proj_model and (proj_model.total_sell_price or 0) > 0 else ((proj_model.sale_value or 0.0) if proj_model else 0.0)
+    baseline_cost = (proj_model.total_sell_price - proj_model.margin_amount) if proj_model and proj_model.total_sell_price else ((proj_model.total_cost_price or 0.0) if proj_model else 0.0)
 
     resource_data = []
     

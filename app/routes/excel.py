@@ -75,7 +75,7 @@ async def upload_excel(file: UploadFile = File(...), current_user = Depends(get_
         }
 
         # Triggers that identify the costing header row
-        COSTING_TRIGGER_COLS = ["item description", "qty", "unit price"]
+        COSTING_TRIGGER_COLS = ["description", "qty", "unit price", "purchase unit"]
 
         for sheet_name, df in all_sheets.items():
             sheet_lower = sheet_name.lower().strip()
@@ -123,7 +123,7 @@ async def upload_excel(file: UploadFile = File(...), current_user = Depends(get_
                     col_map = {}
                     for col in df_cost.columns:
                         cl = col.lower()
-                        if "item description" in cl or ("description" in cl and "item" in cl):
+                        if "description" in cl:
                             col_map["Description"] = col
                         elif cl in ("sl.no", "sl no", "slno") or (cl.startswith("sl") and len(cl) <= 6):
                             col_map["Sl.No"] = col
@@ -131,8 +131,16 @@ async def upload_excel(file: UploadFile = File(...), current_user = Depends(get_
                             col_map["SAP Material ID"] = col
                         elif "make" in cl:
                             col_map["Make & Model"] = col
+                        elif "selling unit" in cl or ("unit price" in cl and "selling" in cl):
+                            col_map["Unit Price (INR)"] = col
+                        elif "purchase unit" in cl or ("unit price" in cl and "purchase" in cl):
+                            col_map["Unit Cost"] = col
                         elif "unit price" in cl:
                             col_map["Unit Price (INR)"] = col
+                        elif "selling total" in cl or ("total" in cl and "selling" in cl):
+                            col_map["Total Price (INR)"] = col
+                        elif "purchase total" in cl or ("total" in cl and "purchase" in cl):
+                            col_map["Total Cost"] = col
                         elif "total price" in cl:
                             col_map["Total Price (INR)"] = col
                         elif "unit cost" in cl:
@@ -214,7 +222,10 @@ async def upload_excel(file: UploadFile = File(...), current_user = Depends(get_
         ]
         for f in num_fields:
             if f in project_info:
-                project_info[f] = safe_parse_numeric(project_info[f])
+                val = safe_parse_numeric(project_info[f])
+                if f in ["margin_pct", "margin_target", "margin_deviation_pct"] and -1.0 <= val <= 1.0 and val != 0:
+                    val *= 100.0
+                project_info[f] = val
 
         result = {
             "summary": {

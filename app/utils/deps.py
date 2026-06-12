@@ -45,8 +45,8 @@ def get_current_manager(current_user: User = Depends(get_current_user)):
     return current_user
 
 def get_current_vp(current_user: User = Depends(get_current_user)):
-    if current_user.role != "VP":
-        raise HTTPException(status_code=403, detail="Not authorized. VP role required.")
+    if current_user.role not in ["VP", "PC"]:
+        raise HTTPException(status_code=403, detail="Not authorized. VP or PC role required.")
     return current_user
 
 def get_current_executive(current_user: User = Depends(get_current_user)):

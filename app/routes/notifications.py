@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.db.session import get_db
-from app.models.workflow import InAppNotification
+from app.models.project import InAppNotification
 from app.utils.deps import get_current_user
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
@@ -14,7 +14,7 @@ def get_notifications(db: Session = Depends(get_db), current_user = Depends(get_
     
     notifications = (
         db.query(InAppNotification)
-        .filter(func.lower(InAppNotification.recipient_email) == current_user.email.lower())
+        .filter(func.lower(InAppNotification.pm_email) == current_user.email.lower())
         .order_by(InAppNotification.created_at.desc())
         .limit(50)
         .all()
@@ -22,12 +22,13 @@ def get_notifications(db: Session = Depends(get_db), current_user = Depends(get_
     return [
         {
             "id": n.id,
-            "project_name": n.title or "New Notification",
-            "message": n.message,
+            "project_name": n.project_name,
+            "customer_name": n.customer_name,
+            "assigned_by": n.assigned_by,
+            "duration": n.project_duration,
+            "project_id": n.project_id,
             "is_read": n.is_read,
             "created_at": n.created_at.isoformat() if n.created_at else None,
-            "type": n.type,
-            "priority": n.priority,
         }
         for n in notifications
     ]
@@ -39,7 +40,7 @@ def mark_notification_read(notification_id: int, db: Session = Depends(get_db), 
     
     notification = db.query(InAppNotification).filter(
         InAppNotification.id == notification_id,
-        func.lower(InAppNotification.recipient_email) == current_user.email.lower()
+        func.lower(InAppNotification.pm_email) == current_user.email.lower()
     ).first()
     
     if not notification:
