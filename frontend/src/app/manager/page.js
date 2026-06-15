@@ -399,7 +399,9 @@ export default function ManagerDashboard() {
     <div style={{ 
       display:'flex', 
       minHeight:'100vh', 
-      background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)', 
+      backgroundColor: '#f8fafc',
+      backgroundImage: 'radial-gradient(#cbd5e1 1px, transparent 1px)',
+      backgroundSize: '20px 20px',
       position: 'relative',
       color:'#1e293b', 
       fontFamily:"'Inter',sans-serif" 

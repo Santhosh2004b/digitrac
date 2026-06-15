@@ -38,20 +38,5 @@ export default function DashboardRedirect() {
     checkAuth();
   }, []);
 
-  return (
-    <div style={{ minHeight: '100vh', background: '#020406', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '2rem', color: '#fff' }}>
-      <motion.div 
-        animate={{ 
-          rotate: 360,
-          scale: [1, 1.1, 1],
-          boxShadow: ["0 0 20px #3b82f6", "0 0 40px #3b82f6", "0 0 20px #3b82f6"]
-        }} 
-        transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-        style={{ width: 50, height: 50, borderRadius: '50%', border: '3px solid #3b82f6', borderTopColor: 'rgba(0,0,0,0)' }}
-      />
-      <div style={{ fontSize: '0.7rem', fontWeight: 900, color: '#3b82f6', letterSpacing: '0.5em', textTransform: 'uppercase' }}>
-        Authorizing Command Access...
-      </div>
-    </div>
-  );
+  return null;
 }

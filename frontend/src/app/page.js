@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { Mail, Lock, ChevronRight, Cpu, Shield, Activity, Fingerprint, Target, Terminal } from 'lucide-react';
+import { Terminal } from 'lucide-react';
 
 const API = 'http://127.0.0.1:8000';
 
@@ -18,6 +18,15 @@ export default function LoginPage() {
   const [newPassword, setNewPassword] = useState('');
   const [authTab, setAuthTab] = useState('EXISTING');
   const [isBooting, setIsBooting] = useState(false);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      setMousePos({ x: e.clientX, y: e.clientY });
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
 
   const handleVerifyNew = async (e) => {
     e.preventDefault();
@@ -118,12 +127,41 @@ export default function LoginPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', width: '100vw', background: '#020617', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflowY: 'auto', boxSizing: 'border-box', padding: '1.5rem', color: '#fff' }}>
+    <div style={{ 
+      minHeight: '100vh', width: '100vw', 
+      background: '#040b17', 
+      fontFamily: "'Courier New', Courier, monospace",
+      color: '#fff',
+      display: 'flex', flexDirection: 'column',
+      position: 'relative', overflow: 'hidden'
+    }}>
       
-      {/* ══ Background ══ */}
-      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
-        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.05) 0%, rgba(0,0,0,0) 50%)' }} />
-        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,0.01) 1px, rgba(0,0,0,0) 1px), linear-gradient(90deg, rgba(255,255,255,0.01) 1px, rgba(0,0,0,0) 1px)', backgroundSize: '60px 60px' }} />
+      {/* Interactive Mouse Spotlight & Grid Background */}
+      <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
+        
+        {/* Base Dim Grid (Always full screen) */}
+        <div style={{ 
+          position: 'absolute', inset: 0, opacity: 0.15,
+          backgroundImage: 'linear-gradient(rgba(59, 130, 246, 0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(59, 130, 246, 0.4) 1px, transparent 1px)', 
+          backgroundSize: '40px 40px' 
+        }} />
+
+        {/* Glowing Interactive Grid (Full Page) */}
+        <div style={{ 
+          position: 'absolute', inset: 0,
+          backgroundImage: 'linear-gradient(rgba(0, 191, 255, 0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 191, 255, 0.8) 1px, transparent 1px)', 
+          backgroundSize: '40px 40px',
+          WebkitMaskImage: `radial-gradient(400px circle at ${mousePos.x}px ${mousePos.y}px, black, transparent)`,
+          maskImage: `radial-gradient(400px circle at ${mousePos.x}px ${mousePos.y}px, black, transparent)`
+        }} />
+
+        {/* Soft Ambient Spotlight Wash (Full Page) */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: `radial-gradient(800px circle at ${mousePos.x}px ${mousePos.y}px, rgba(0, 191, 255, 0.15), transparent 50%)`,
+          transition: 'background 0.1s ease'
+        }} />
+
       </div>
 
       <AnimatePresence>
@@ -132,165 +170,393 @@ export default function LoginPage() {
             initial={{ opacity: 0 }} 
             animate={{ opacity: 1 }} 
             exit={{ opacity: 0 }} 
-            style={{ position: 'fixed', inset: 0, background: 'rgba(2, 6, 23, 0.95)', backdropFilter: 'blur(30px)', zIndex: 9999, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(4, 11, 23, 0.95)', backdropFilter: 'blur(10px)', zIndex: 9999, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
           >
             <div style={{ position: 'relative', width: 120, height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <svg width="100" height="100" style={{ position: 'absolute', transform: 'rotate(-90deg)' }}>
                  <motion.circle 
                     cx="50" cy="50" r="46" 
-                    stroke="#00ffc8" 
+                    stroke="#00bfff" 
                     strokeWidth="3" 
                     fill="rgba(0,0,0,0)"
                     strokeDasharray="289"
                     initial={{ strokeDashoffset: 289 }}
                     animate={{ strokeDashoffset: 0 }}
                     transition={{ duration: 2.2, ease: "easeInOut" }}
-                    style={{ filter: 'drop-shadow(0 0 10px rgba(0,255,200,0.5))' }}
+                    style={{ filter: 'drop-shadow(0 0 10px rgba(0,191,255,0.5))' }}
                  />
               </svg>
               <motion.div 
                 animate={{ opacity: [0.4, 1, 0.4], scale: [0.9, 1.1, 0.9] }} 
                 transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
               >
-                <svg width="48" height="48" viewBox="0 0 100 100" fill="#00ffc8" style={{ filter: 'drop-shadow(0 0 15px rgba(0, 255, 200, 0.6))' }}>
+                <svg width="48" height="48" viewBox="0 0 100 100" fill="#00bfff" style={{ filter: 'drop-shadow(0 0 15px rgba(0, 191, 255, 0.6))' }}>
                    <path d="M50 20 C45 20 40 25 35 35 L20 70 C18 75 22 80 28 78 C35 75 45 70 50 70 C55 70 65 75 72 78 C78 80 82 75 80 70 L65 35 C60 25 55 20 50 20 Z" />
                 </svg>
               </motion.div>
             </div>
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <h1 style={{ fontSize: '1.8rem', fontWeight: 900, margin: 0, letterSpacing: '-0.02em', background: 'linear-gradient(to bottom, #fff 50%, rgba(0,255,200,0.4))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'rgba(0,0,0,0)' }}>DIGITRAC</h1>
-              <div style={{ fontSize: '0.65rem', fontWeight: 900, color: '#00ffc8', letterSpacing: '0.4em', textTransform: 'uppercase', marginTop: '0.2rem' }}>ARCHE</div>
+              <h1 style={{ fontSize: '1.8rem', fontWeight: 900, margin: 0, letterSpacing: '0.1em', fontFamily: 'sans-serif' }}>DIGITRAC</h1>
+              <div style={{ fontSize: '0.65rem', fontWeight: 900, color: '#00bfff', letterSpacing: '0.4em', textTransform: 'uppercase', marginTop: '0.2rem', fontFamily: 'sans-serif' }}>ARCHE</div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: '440px', margin: 'auto' }}>
-        
-        {/* Brand Header */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '1.25rem' }}>
-          <div style={{ width: 40, height: 40, background: 'rgba(0,0,0,0)', border: '2px solid rgba(0,255,200,0.3)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 30px rgba(0, 255, 200, 0.1)', marginBottom: '0.5rem' }}>
-            <svg width="20" height="20" viewBox="0 0 100 100" fill="#00ffc8">
+      {/* ══ Top Navigation ══ */}
+      <nav style={{ position: 'relative', zIndex: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 2rem', borderBottom: '1px solid rgba(255,255,255,0.05)', flexWrap: 'wrap', gap: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ width: 32, height: 32, border: '2px solid rgba(255,255,255,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="18" height="18" viewBox="0 0 100 100" fill="#fff">
                <path d="M50 20 C45 20 40 25 35 35 L20 70 C18 75 22 80 28 78 C35 75 45 70 50 70 C55 70 65 75 72 78 C78 80 82 75 80 70 L65 35 C60 25 55 20 50 20 Z" />
             </svg>
           </div>
-          <h1 style={{ fontSize: '1.8rem', fontWeight: 900, margin: 0, letterSpacing: '-0.02em', background: 'linear-gradient(to bottom, #fff 50%, rgba(0,255,200,0.4))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'rgba(0,0,0,0)' }}>DIGITRAC</h1>
-          <div style={{ fontSize: '0.65rem', fontWeight: 900, color: '#00ffc8', letterSpacing: '0.4em', textTransform: 'uppercase', marginTop: '0.2rem' }}>ARCHE</div>
+          <span style={{ fontSize: '1.25rem', fontWeight: 800, letterSpacing: '0.1em', fontFamily: 'sans-serif' }}>DIGITRAC</span>
         </div>
+        
 
-        {/* Auth Card */}
-        <div style={{ position: 'relative', background: 'rgba(255,255,255,0.01)', backdropFilter: 'blur(30px)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '1.25rem', padding: '1.5rem 2rem', boxShadow: '0 40px 100px rgba(0,0,0,0.8)' }}>
+
+        <div>
+          <button style={{ border: '1px solid #00bfff', background: 'transparent', color: '#00bfff', padding: '0.5rem 1.25rem', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.1em', cursor: 'pointer' }}>REQUEST REVIEW</button>
+        </div>
+      </nav>
+
+      {/* ══ Main Content ══ */}
+      <div style={{ flex: 1, display: 'flex', flexWrap: 'nowrap', position: 'relative', zIndex: 10, padding: '0.5rem 2rem', alignItems: 'center', justifyContent: 'space-between', gap: '2rem', overflow: 'hidden' }}>
+        
+        {/* Left Column (Typography & Auth) */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', minWidth: 0, maxWidth: '600px', zIndex: 10 }}>
           
-          {/* Auth Tab Selectors */}
-          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem', background: 'rgba(255,255,255,0.02)', padding: '0.3rem', borderRadius: '0.5rem', border: '1px solid rgba(255,255,255,0.05)' }}>
-            <button 
-              type="button"
-              onClick={() => { setAuthTab('EXISTING'); setIsSetupMode(false); setError(''); }}
-              style={{ flex: 1, padding: '0.75rem', background: authTab === 'EXISTING' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(0,0,0,0)', border: authTab === 'EXISTING' ? '1px solid #3b82f6' : 'none', color: authTab === 'EXISTING' ? '#fff' : '#8896ab', borderRadius: '0.5rem', fontSize: '0.7rem', fontWeight: 900, cursor: 'pointer', transition: 'all 0.2s' }}>
-              EXISTING MEMBER
-            </button>
-            <button 
-              type="button"
-              onClick={() => { setAuthTab('NEW'); setIsSetupMode(false); setError(''); }}
-              style={{ flex: 1, padding: '0.75rem', background: authTab === 'NEW' ? 'rgba(0, 255, 200, 0.2)' : 'rgba(0,0,0,0)', border: authTab === 'NEW' ? '1px solid #00ffc8' : 'none', color: authTab === 'NEW' ? '#fff' : '#8896ab', borderRadius: '0.5rem', fontSize: '0.7rem', fontWeight: 900, cursor: 'pointer', transition: 'all 0.2s' }}>
-              NEW USER
-            </button>
+          {/* 1. DIGITRAC V4.1 — PRODUCTION */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem', overflow: 'hidden' }}>
+            <motion.div 
+              initial={{ scaleX: 0 }}
+              animate={{ scaleX: 1 }}
+              transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
+              style={{ width: '40px', height: '1px', background: '#00bfff', transformOrigin: 'left' }}
+            />
+            <motion.div 
+              initial={{ opacity: 0, letterSpacing: '0.4em' }}
+              animate={{ opacity: 1, letterSpacing: '0.2em' }}
+              transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
+              style={{ color: '#00bfff', fontSize: '0.65rem', fontWeight: 700, position: 'relative', overflow: 'hidden' }}
+            >
+              DIGITRAC V4.1 — PRODUCTION
+              {/* Scan line */}
+              <motion.div
+                initial={{ left: '-100%' }}
+                animate={{ left: '200%' }}
+                transition={{ duration: 1.5, ease: "easeInOut", delay: 0.8 }}
+                style={{ position: 'absolute', top: 0, bottom: 0, width: '20px', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)', transform: 'skewX(-20deg)' }}
+              />
+            </motion.div>
           </div>
 
-          {scanning && (
-            <motion.div initial={{ top: '0%' }} animate={{ top: '100%' }} transition={{ duration: 1.5, repeat: 0, ease: 'linear' }}
-              style={{ position: 'absolute', left: 0, width: '100%', height: '2px', background: 'linear-gradient(to right, rgba(0,0,0,0), #3b82f6, rgba(0,0,0,0))', boxShadow: '0 0 15px #3b82f6', zIndex: 10 }}
-            />
-          )}
+          {/* 2, 3, 4. Headline */}
+          <h1 style={{ 
+            fontSize: 'clamp(2rem, 5vw, 3.2rem)', 
+            fontWeight: 900, 
+            lineHeight: 1, 
+            margin: '0 0 1rem 0',
+            fontFamily: 'sans-serif',
+            letterSpacing: '0.05em',
+            whiteSpace: 'nowrap'
+          }}>
+            <div style={{ overflow: 'hidden', paddingBottom: '0.1em' }}>
+              <motion.div
+                initial={{ y: '100%', opacity: 0, filter: 'blur(10px)' }}
+                animate={{ y: 0, opacity: 1, filter: 'blur(0px)' }}
+                transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.5 }}
+                style={{ display: 'flex' }}
+              >
+                E
+                <motion.span
+                  initial={{ opacity: 0, rotate: 0 }}
+                  animate={{ opacity: 1, rotate: 90 }}
+                  transition={{ duration: 1.5, delay: 2.8 }}
+                  style={{ display: 'inline-block', originX: 'center', originY: 'center' }}
+                >
+                  V
+                </motion.span>
+                ERY PAGE.
+              </motion.div>
+            </div>
+            <div style={{ overflow: 'hidden', paddingBottom: '0.1em' }}>
+              <motion.div
+                initial={{ y: '100%', opacity: 0, filter: 'blur(10px)' }}
+                animate={{ y: 0, opacity: 1, filter: 'blur(0px)' }}
+                transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.9 }}
+                style={{ display: 'flex' }}
+              >
+                E
+                <motion.span
+                  initial={{ opacity: 0, rotate: 0 }}
+                  animate={{ opacity: 1, rotate: 90 }}
+                  transition={{ duration: 1.5, delay: 3.0 }}
+                  style={{ display: 'inline-block', originX: 'center', originY: 'center' }}
+                >
+                  V
+                </motion.span>
+                ERY METRIC.
+              </motion.div>
+            </div>
+            <div style={{ overflow: 'hidden', paddingBottom: '0.2em' }}>
+              <motion.div
+                initial={{ y: '100%', opacity: 0, filter: 'blur(10px)' }}
+                animate={{ y: 0, opacity: 1, filter: 'blur(0px)' }}
+                transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1], delay: 1.3 }}
+                style={{ color: '#00bfff' }}
+              >
+                ACCOUNTED FOR.
+              </motion.div>
+            </div>
+          </h1>
 
-          {isSetupMode ? (
-            <form onSubmit={handleSetup} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <div style={{ color: '#00ffc8', fontSize: '0.7rem', fontWeight: 800, textAlign: 'center' }}>
-                FIRST-TIME LOGIN DETECTED
-              </div>
-              <div style={{ color: '#8896ab', fontSize: '0.6rem', textAlign: 'center', marginBottom: '0.2rem' }}>
-                Please create a permanent secure password for your Arche Global identity.
-              </div>
-              <input 
-                type="email" value={email} disabled
-                style={{ width: '100%', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '0.4rem', padding: '0.75rem 0.85rem', fontSize: '0.75rem', color: '#8896ab', outline: 'none', cursor: 'not-allowed', boxSizing: 'border-box' }}
-              />
-              <input 
-                type="password" placeholder="Create Secure Password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
-                style={{ width: '100%', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(0,255,200,0.3)', borderBottom: '2px solid rgba(0,255,200,0.6)', borderRadius: '0.4rem', padding: '0.75rem 0.85rem', fontSize: '0.75rem', color: '#fff', outline: 'none', boxSizing: 'border-box' }}
-                required
-              />
-              {error && <div style={{ color: '#fca5a5', fontSize: '0.6rem', fontWeight: 900, textAlign: 'center', background: 'rgba(239, 68, 68, 0.05)', padding: '0.5rem', borderRadius: '0.4rem', border: '1px solid rgba(239, 68, 68, 0.1)' }}>{error}</div>}
-              <motion.button whileHover={{ scale: 1.02, background: '#00ffc8', color: '#000' }} whileTap={{ scale: 0.98 }} disabled={loading}
-                style={{ width: '100%', background: 'rgba(0,0,0,0)', border: '1px solid #00ffc8', color: '#00ffc8', padding: '0.75rem 0.85rem', borderRadius: '0.4rem', fontSize: '0.75rem', fontWeight: 900, cursor: 'pointer', letterSpacing: '0.15em', transition: 'all 0.3s', boxSizing: 'border-box' }}>
-                {loading ? 'PROCESSING...' : 'INITIALIZE ACCOUNT'}
+          {/* Authentication Form */}
+          <div style={{ width: '100%', maxWidth: '450px', marginTop: '1.5rem' }}>
+            
+            {/* Auth Tabs */}
+            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+              {/* 5. EXISTING MEMBER */}
+              <motion.button 
+                type="button"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.6, delay: 1.8 }}
+                onClick={() => { setAuthTab('EXISTING'); setIsSetupMode(false); setError(''); }}
+                style={{ 
+                  flex: 1, padding: '0.85rem', 
+                  background: authTab === 'EXISTING' ? '#00bfff' : 'transparent', 
+                  border: authTab === 'EXISTING' ? 'none' : '1px solid rgba(255,255,255,0.2)', 
+                  color: authTab === 'EXISTING' ? '#040b17' : 'rgba(255,255,255,0.6)', 
+                  fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.1em', cursor: 'pointer', transition: 'all 0.3s',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                  position: 'relative', overflow: 'hidden'
+                }}
+                whileHover={{ scale: 1.02, boxShadow: '0 0 20px rgba(0, 191, 255, 0.4)' }}
+              >
+                {authTab === 'EXISTING' && (
+                  <motion.div
+                    initial={{ left: '-100%' }}
+                    animate={{ left: '200%' }}
+                    transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
+                    style={{ position: 'absolute', top: 0, bottom: 0, width: '30%', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)', transform: 'skewX(-20deg)' }}
+                  />
+                )}
+                EXISTING MEMBER {authTab === 'EXISTING' && <span style={{ fontSize: '1rem' }}>→</span>}
               </motion.button>
-            </form>
-          ) : authTab === 'NEW' ? (
-            <form onSubmit={handleVerifyNew} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <div style={{ color: '#00ffc8', fontSize: '0.7rem', fontWeight: 800, textAlign: 'center' }}>
-                NEW USER REGISTRATION
-              </div>
-              <div style={{ color: '#8896ab', fontSize: '0.6rem', textAlign: 'center', marginBottom: '0.2rem' }}>
-                Enter your Arche Global identity to verify your project assignment.
-              </div>
-              <input 
-                type="email" placeholder="Access Identifier (e.g., as@arche.global)" value={email} onChange={(e) => setEmail(e.target.value)}
-                style={{ width: '100%', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(0,255,200,0.3)', borderBottom: '2px solid rgba(0,255,200,0.6)', borderRadius: '0.4rem', padding: '0.75rem 0.85rem', fontSize: '0.75rem', color: '#fff', outline: 'none', boxSizing: 'border-box' }}
-                required
-              />
-              {error && <div style={{ color: '#fca5a5', fontSize: '0.6rem', fontWeight: 900, textAlign: 'center', background: 'rgba(239, 68, 68, 0.05)', padding: '0.5rem', borderRadius: '0.4rem', border: '1px solid rgba(239, 68, 68, 0.1)' }}>{error}</div>}
-              <motion.button whileHover={{ scale: 1.02, background: '#00ffc8', color: '#000' }} whileTap={{ scale: 0.98 }} disabled={loading}
-                style={{ width: '100%', background: 'rgba(0,0,0,0)', border: '1px solid #00ffc8', color: '#00ffc8', padding: '0.75rem 0.85rem', borderRadius: '0.4rem', fontSize: '0.75rem', fontWeight: 900, cursor: 'pointer', letterSpacing: '0.15em', transition: 'all 0.3s', boxSizing: 'border-box' }}>
-                {loading ? 'VERIFYING...' : 'VERIFY ASSIGNMENT'}
-              </motion.button>
-            </form>
-          ) : (
-            <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <input 
-                type="email" placeholder="Access Identifier" value={email} onChange={(e) => setEmail(e.target.value)}
-                style={{ width: '100%', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderBottom: '2px solid rgba(255,255,255,0.1)', borderRadius: '0.4rem', padding: '0.75rem 0.85rem', fontSize: '0.75rem', color: '#fff', outline: 'none', boxSizing: 'border-box' }}
-                required
-              />
-              <input 
-                type="password" placeholder="Security Sequence" value={password} onChange={(e) => setPassword(e.target.value)}
-                style={{ width: '100%', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderBottom: '2px solid rgba(255,255,255,0.1)', borderRadius: '0.4rem', padding: '0.75rem 0.85rem', fontSize: '0.75rem', color: '#fff', outline: 'none', boxSizing: 'border-box' }}
-                required
-              />
-              {error && <div style={{ color: '#fca5a5', fontSize: '0.6rem', fontWeight: 900, textAlign: 'center', background: 'rgba(239, 68, 68, 0.05)', padding: '0.5rem', borderRadius: '0.4rem', border: '1px solid rgba(239, 68, 68, 0.1)' }}>{error}</div>}
-              <motion.button whileHover={{ scale: 1.02, background: '#fff', color: '#000' }} whileTap={{ scale: 0.98 }} disabled={loading}
-                style={{ width: '100%', background: 'rgba(0,0,0,0)', border: '1px solid #3b82f6', color: '#3b82f6', padding: '0.75rem 0.85rem', borderRadius: '0.4rem', fontSize: '0.75rem', fontWeight: 900, cursor: 'pointer', letterSpacing: '0.15em', transition: 'all 0.3s', boxSizing: 'border-box' }}>
-                {loading ? 'AUTHENTICATING...' : 'INITIALIZE ACCESS'}
-              </motion.button>
-            </form>
-          )}
 
-          {/* Elite Access Terminal Box */}
-          <div style={{ marginTop: '1.25rem', background: 'rgba(59, 130, 246, 0.03)', border: '1px solid rgba(59, 130, 246, 0.1)', borderRadius: '0.5rem', padding: '0.75rem' }}>
-             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', borderBottom: '1px solid rgba(59, 130, 246, 0.1)', paddingBottom: '0.4rem' }}>
-                <Terminal size={12} color="#3b82f6" />
-                <span style={{ fontSize: '0.55rem', fontWeight: 900, color: '#3b82f6', letterSpacing: '0.1em' }}>AUTHORIZED ACCESS NODES</span>
-             </div>
-             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
-                <div style={{ textAlign: 'center' }}>
-                   <div style={{ fontSize: '0.5rem', color: '#3b82f6', fontWeight: 900, marginBottom: '0.1rem' }}>EXEC</div>
-                   <div style={{ fontSize: '0.45rem', color: 'rgba(255,255,255,0.3)' }}>vp@digitrac.com</div>
-                </div>
-                <div style={{ textAlign: 'center' }}>
-                   <div style={{ fontSize: '0.5rem', color: '#3b82f6', fontWeight: 900, marginBottom: '0.1rem' }}>MNGR</div>
-                   <div style={{ fontSize: '0.45rem', color: 'rgba(255,255,255,0.3)' }}>manager@digitrac.com</div>
-                </div>
-                <div style={{ textAlign: 'center' }}>
-                   <div style={{ fontSize: '0.5rem', color: '#3b82f6', fontWeight: 900, marginBottom: '0.1rem' }}>EMP</div>
-                   <div style={{ fontSize: '0.45rem', color: 'rgba(255,255,255,0.3)' }}>employee@digitrac.com</div>
-                </div>
-             </div>
-             <div style={{ marginTop: '0.5rem', textAlign: 'center', fontSize: '0.4rem', color: 'rgba(59, 130, 246, 0.3)', fontWeight: 800 }}>SECURITY SEQUENCE: [ROLE]123</div>
+              {/* 6. NEW USER */}
+              <motion.button 
+                type="button"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.6, delay: 2.0 }}
+                onClick={() => { setAuthTab('NEW'); setIsSetupMode(false); setError(''); }}
+                style={{ 
+                  flex: 1, padding: '0.85rem', 
+                  background: authTab === 'NEW' ? '#00bfff' : 'transparent', 
+                  border: authTab === 'NEW' ? 'none' : '1px solid rgba(255,255,255,0.2)', 
+                  color: authTab === 'NEW' ? '#040b17' : 'rgba(255,255,255,0.6)', 
+                  fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.1em', cursor: 'pointer', transition: 'all 0.3s',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
+                }}
+                whileHover={{ borderColor: '#00bfff', boxShadow: 'inset 0 0 15px rgba(0,191,255,0.2)', color: '#00bfff' }}
+              >
+                NEW USER {authTab === 'NEW' && <span style={{ fontSize: '1rem' }}>→</span>}
+              </motion.button>
+            </div>
+
+            <form onSubmit={isSetupMode ? handleSetup : (authTab === 'EXISTING' ? handleLogin : handleVerifyNew)}>
+              
+              {/* 7. Access Identifier */}
+              <motion.div 
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 2.2 }}
+                style={{ marginBottom: '1rem', position: 'relative' }}
+              >
+                <input 
+                  type="email" 
+                  required
+                  placeholder="Access Identifier"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  disabled={loading || scanning || isSetupMode}
+                  style={{ 
+                    width: '100%', padding: '1rem 1.25rem', 
+                    background: 'rgba(255,255,255,0.02)', 
+                    border: '1px solid rgba(255,255,255,0.1)', 
+                    color: '#fff', fontSize: '0.85rem', fontFamily: 'monospace',
+                    outline: 'none', transition: 'all 0.3s'
+                  }}
+                  onFocus={(e) => { e.target.style.borderColor = '#00bfff'; e.target.style.boxShadow = '0 0 15px rgba(0,191,255,0.2)'; e.target.style.background = 'rgba(0,191,255,0.05)'; }}
+                  onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.1)'; e.target.style.boxShadow = 'none'; e.target.style.background = 'rgba(255,255,255,0.02)'; }}
+                />
+              </motion.div>
+
+              {/* 8. Security Sequence */}
+              {(!isSetupMode && authTab === 'EXISTING') && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 2.4 }}
+                  style={{ marginBottom: '1.5rem', position: 'relative' }}
+                >
+                  <input 
+                    type="password" 
+                    required
+                    placeholder="Security Sequence"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    disabled={loading || scanning}
+                    style={{ 
+                      width: '100%', padding: '1rem 1.25rem', 
+                      background: 'rgba(255,255,255,0.02)', 
+                      border: '1px solid rgba(255,255,255,0.1)', 
+                      color: '#fff', fontSize: '0.85rem', fontFamily: 'monospace',
+                      outline: 'none', transition: 'all 0.3s'
+                    }}
+                    onFocus={(e) => { e.target.style.borderColor = '#00bfff'; e.target.style.boxShadow = '0 0 15px rgba(0,191,255,0.2)'; e.target.style.background = 'rgba(0,191,255,0.05)'; }}
+                    onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.1)'; e.target.style.boxShadow = 'none'; e.target.style.background = 'rgba(255,255,255,0.02)'; }}
+                  />
+                </motion.div>
+              )}
+
+              {/* New Password for Setup Mode */}
+              {isSetupMode && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 2.4 }}
+                  style={{ marginBottom: '1.5rem', position: 'relative' }}
+                >
+                  <input 
+                    type="password" 
+                    required
+                    placeholder="Create Secure Password"
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                    disabled={loading || scanning}
+                    style={{ 
+                      width: '100%', padding: '1rem 1.25rem', 
+                      background: 'rgba(255,255,255,0.02)', 
+                      border: '1px solid rgba(255,255,255,0.1)', 
+                      color: '#fff', fontSize: '0.85rem', fontFamily: 'monospace',
+                      outline: 'none', transition: 'all 0.3s'
+                    }}
+                    onFocus={(e) => { e.target.style.borderColor = '#00bfff'; e.target.style.boxShadow = '0 0 15px rgba(0,191,255,0.2)'; e.target.style.background = 'rgba(0,191,255,0.05)'; }}
+                    onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.1)'; e.target.style.boxShadow = 'none'; e.target.style.background = 'rgba(255,255,255,0.02)'; }}
+                  />
+                </motion.div>
+              )}
+
+              {/* Error Message */}
+              {error && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ color: '#ef4444', fontSize: '0.75rem', marginBottom: '1rem', fontWeight: 800 }}>{error}</motion.div>}
+
+              {/* 9. INITIALIZE ACCESS */}
+              <motion.button 
+                type="submit" 
+                disabled={loading || scanning}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 2.6 }}
+                style={{ 
+                  width: '100%', padding: '1rem', 
+                  background: scanning ? 'rgba(0,191,255,0.1)' : 'transparent', 
+                  border: '1px solid #00bfff', 
+                  color: '#00bfff', fontSize: '0.8rem', fontWeight: 800, letterSpacing: '0.2em', cursor: (loading || scanning) ? 'not-allowed' : 'pointer',
+                  position: 'relative', overflow: 'hidden', transition: 'all 0.3s'
+                }}
+                whileHover={(!loading && !scanning) ? { scale: 1.02, background: 'rgba(0,191,255,0.05)', boxShadow: '0 0 20px rgba(0,191,255,0.4)' } : {}}
+              >
+                {scanning && (
+                  <motion.div
+                    initial={{ left: '-100%' }}
+                    animate={{ left: '200%' }}
+                    transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+                    style={{ position: 'absolute', top: 0, bottom: 0, width: '40%', background: 'linear-gradient(90deg, transparent, rgba(0,191,255,0.3), transparent)', zIndex: 0 }}
+                  />
+                )}
+                <span style={{ position: 'relative', zIndex: 1 }}>
+                  {scanning ? 'AUTHENTICATING...' : isSetupMode ? 'SET CREDENTIALS' : (authTab === 'EXISTING' ? 'INITIALIZE ACCESS' : 'VERIFY IDENTITY')}
+                </span>
+              </motion.button>
+            </form>
           </div>
         </div>
 
-      </motion.div>
+        {/* Right Column (3D Glowing Document) */}
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+          
+          <motion.div 
+            initial={{ rotateX: 60, rotateY: 0, rotateZ: -30, scale: 0.8 }}
+            animate={{ rotateZ: [-30, -28, -30], y: [0, -10, 0] }}
+            transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+            style={{ 
+              width: 'min(100%, 350px)', height: 'min(60vh, 400px)', 
+              border: '2px solid #00bfff',
+              background: 'rgba(0, 191, 255, 0.05)',
+              boxShadow: '0 0 40px rgba(0, 191, 255, 0.2), inset 0 0 40px rgba(0, 191, 255, 0.1)',
+              position: 'relative',
+              transformStyle: 'preserve-3d',
+              backdropFilter: 'blur(5px)',
+              padding: '2rem 1.5rem',
+              overflow: 'hidden'
+            }}
+          >
+            {/* Scanning Laser */}
+            <motion.div 
+              initial={{ top: '0%' }}
+              animate={{ top: ['0%', '100%', '0%'] }}
+              transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
+              style={{
+                position: 'absolute',
+                left: 0,
+                width: '100%',
+                height: '2px',
+                background: '#00bfff',
+                boxShadow: '0 0 20px 2px #00bfff, 0 0 40px 5px #00bfff',
+                zIndex: 20,
+                opacity: 0.8
+              }}
+            />
 
+            {/* Top Right Fold */}
+            <div style={{ position: 'absolute', top: -2, right: -2, width: '40px', height: '40px', borderBottom: '2px solid #00bfff', borderLeft: '2px solid #00bfff', background: '#040b17' }}></div>
+            <div style={{ position: 'absolute', top: -2, right: 38, width: '2px', height: '42px', background: '#00bfff' }}></div>
+            <div style={{ position: 'absolute', top: 38, right: -2, width: '42px', height: '2px', background: '#00bfff' }}></div>
+
+            {/* Document Lines */}
+            {[...Array(6)].map((_, i) => (
+              <div key={i} style={{ 
+                height: '2px', 
+                background: i === 1 ? '#00bfff' : 'rgba(0, 191, 255, 0.4)', 
+                width: i % 2 === 0 ? '80%' : '100%', 
+                marginBottom: '2.5rem',
+                boxShadow: i === 1 ? '0 0 10px #00bfff' : 'none'
+              }}></div>
+            ))}
+            
+            {/* Bottom Graphic Lines */}
+            <div style={{ height: '2px', background: 'rgba(0, 191, 255, 0.4)', width: '60%', marginBottom: '2.5rem' }}></div>
+            <div style={{ height: '2px', background: 'rgba(0, 191, 255, 0.4)', width: '90%', marginBottom: '3rem' }}></div>
+
+            {/* VERIFIED Stamp */}
+            <div style={{ border: '2px solid #00bfff', color: '#00bfff', padding: '0.5rem 1rem', width: 'fit-content', fontSize: '0.8rem', letterSpacing: '0.2em', fontWeight: 800, fontFamily: 'monospace' }}>
+              VERIFIED
+            </div>
+
+            {/* Bottom Right Corner Reticle */}
+            <div style={{ position: 'absolute', bottom: '20px', right: '20px', width: '20px', height: '20px', borderBottom: '2px solid #00bfff', borderRight: '2px solid #00bfff' }}></div>
+
+            {/* Internal Glow Effect */}
+            <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 50% 50%, rgba(0, 191, 255, 0.1) 0%, transparent 70%)', pointerEvents: 'none' }}></div>
+          </motion.div>
+
+        </div>
+      </div>
+      
     </div>
   );
 }
