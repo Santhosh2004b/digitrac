@@ -78,10 +78,11 @@ export default function ManagerDashboard() {
   
 
   const [notifications, setNotifications] = useState([]);
-
   const [showNotifications, setShowNotifications] = useState(false);
-
-
+  const [pendingActions, setPendingActions] = useState([]);
+  const [activeActionIndex, setActiveActionIndex] = useState(0);
+  const [actionForm, setActionForm] = useState({ option: 1, buffer_duration_value: 1, buffer_duration_unit: 'Days', reason: '' });
+  const [isSubmittingAction, setIsSubmittingAction] = useState(false);
 
   const [projectData, setProjectData] = useState(null);
 
@@ -199,6 +200,18 @@ export default function ManagerDashboard() {
     } catch(e) { console.error(e); }
   };
 
+  const fetchPendingActions = async () => {
+    const token = tok();
+    if (!token) return;
+    try {
+      const res = await fetchWithAuth(`${API}/manager/pending-actions`);
+      if (res?.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) setPendingActions(data);
+      }
+    } catch(e) { console.error(e); }
+  };
+
 
 
   const loadProject = async (id) => {
@@ -212,20 +225,73 @@ export default function ManagerDashboard() {
     }
   };
 
+  const submitAction = async () => {
+    if (!pendingActions[activeActionIndex]) return;
+    setIsSubmittingAction(true);
+    const action = pendingActions[activeActionIndex];
+    try {
+      const res = await fetchWithAuth(`${API}/manager/projects/${action.project_id}/lifecycle-start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(actionForm)
+      });
+      if (res?.ok) {
+        await fetchPendingActions();
+        await fetchProjects();
+        setActionForm({ option: 1, buffer_duration_value: 1, buffer_duration_unit: 'Days', reason: '' });
+      } else {
+        alert("Failed to submit action.");
+      }
+    } catch (e) {
+      alert("Error submitting action.");
+    } finally {
+      setIsSubmittingAction(false);
+    }
+  };
+
+  const submitExtendBuffer = async () => {
+    if (!pendingActions[activeActionIndex]) return;
+    setIsSubmittingAction(true);
+    const action = pendingActions[activeActionIndex];
+    try {
+      const res = await fetchWithAuth(`${API}/manager/projects/${action.project_id}/extend-buffer`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            buffer_duration_value: actionForm.buffer_duration_value,
+            buffer_duration_unit: actionForm.buffer_duration_unit,
+            remarks: actionForm.reason
+        })
+      });
+      if (res?.ok) {
+        // Also we need to clear the pending action. For now, since the endpoint just extends the buffer, 
+        // the backend might still see the buffer as expired if the new buffer is in the past, or it will clear it.
+        // We will also send an empty lifecycle-start to mark notification as read just in case, but here it'sBUFFER_EXPIRED
+        await fetchPendingActions();
+        await fetchProjects();
+        setActionForm({ option: 1, buffer_duration_value: 1, buffer_duration_unit: 'Days', reason: '' });
+      } else {
+        alert("Failed to extend buffer.");
+      }
+    } catch (e) {
+      alert("Error extending buffer.");
+    } finally {
+      setIsSubmittingAction(false);
+    }
+  };
+
 
 
   useEffect(() => {
-
     fetchProjects();
-
     fetchNotifications();
-
     fetchCentralResources();
-
-    const intv = setInterval(fetchNotifications, 120000); // poll every 2 minutes
-
+    fetchPendingActions();
+    const intv = setInterval(() => {
+        fetchNotifications();
+        fetchPendingActions();
+    }, 120000); // poll every 2 minutes
     return () => clearInterval(intv);
-
   }, []);
 
 
@@ -406,6 +472,186 @@ export default function ManagerDashboard() {
       color:'#1e293b', 
       fontFamily:"'Inter',sans-serif" 
     }}>
+      {pendingActions.length > 0 && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(2, 6, 23, 0.85)', backdropFilter: 'blur(16px)', padding: '2rem' }}>
+            <motion.div 
+                initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }}
+                style={{ width: '100%', maxWidth: '600px', background: '#0f172a', borderRadius: '16px', border: '1px solid #1e293b', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', overflow: 'hidden', maxHeight: '100%', display: 'flex', flexDirection: 'column' }}
+            >
+                <div style={{ padding: '1.5rem', borderBottom: '1px solid #1e293b', display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'linear-gradient(to right, #0f172a, #1e293b)', flexShrink: 0 }}>
+                    <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#3b82f6', boxShadow: '0 0 10px #3b82f6' }}></div>
+                    <div style={{ fontSize: '1.1rem', fontWeight: 900, color: '#f8fafc', letterSpacing: '0.05em' }}>ACTION REQUIRED</div>
+                    <div style={{ marginLeft: 'auto', background: '#1e293b', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.7rem', color: '#94a3b8', fontWeight: 800 }}>{activeActionIndex + 1} OF {pendingActions.length}</div>
+                </div>
+                
+                <div style={{ padding: '2rem', overflowY: 'auto' }}>
+                    {pendingActions[activeActionIndex]?.type === 'NEW_ASSIGNMENT' && (
+                        <div>
+                            <h2 style={{ fontSize: '1.4rem', color: '#f8fafc', marginBottom: '0.5rem', fontWeight: 800 }}>New Project Assignment</h2>
+                            <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '1.5rem' }}>You have been assigned as the Project Manager for a new mission.</p>
+                            
+                            <div style={{ background: '#1e293b', padding: '1rem', borderRadius: '12px', marginBottom: '1.5rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div>
+                                    <div style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 800, letterSpacing: '0.05em' }}>PROJECT NAME</div>
+                                    <div style={{ color: '#f8fafc', fontWeight: 700, fontSize: '0.9rem' }}>{pendingActions[activeActionIndex].project_name}</div>
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 800, letterSpacing: '0.05em' }}>CUSTOMER</div>
+                                    <div style={{ color: '#f8fafc', fontWeight: 700, fontSize: '0.9rem' }}>{pendingActions[activeActionIndex].customer_name || 'N/A'}</div>
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 800, letterSpacing: '0.05em' }}>DURATION</div>
+                                    <div style={{ color: '#f8fafc', fontWeight: 700, fontSize: '0.9rem' }}>{pendingActions[activeActionIndex].project_duration || '0'} Months</div>
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 800, letterSpacing: '0.05em' }}>TARGET MARGIN</div>
+                                    <div style={{ color: '#10b981', fontWeight: 800, fontSize: '0.9rem' }}>{pendingActions[activeActionIndex].margin_target}%</div>
+                                </div>
+                            </div>
+                            
+                            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
+                                {[
+                                    { id: 1, label: 'START PROJECT', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+                                    { id: 2, label: 'NEED BUFFER', color: '#f59e0b', bg: 'rgba(245,158,11,0.1)' },
+                                    { id: 3, label: 'SITE NOT READY', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' }
+                                ].map(opt => (
+                                    <button 
+                                        key={opt.id}
+                                        onClick={() => setActionForm(f => ({ ...f, option: opt.id }))}
+                                        style={{ flex: 1, padding: '1rem', borderRadius: '12px', border: actionForm.option === opt.id ? `2px solid ${opt.color}` : '2px solid transparent', background: actionForm.option === opt.id ? opt.bg : '#1e293b', color: actionForm.option === opt.id ? opt.color : '#94a3b8', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s' }}
+                                    >
+                                        {opt.label}
+                                    </button>
+                                ))}
+                            </div>
+                            
+                            {actionForm.option !== 1 && (
+                                <div style={{ background: '#1e293b', padding: '1rem', borderRadius: '12px', marginBottom: '1.5rem' }}>
+                                    <div style={{ marginBottom: '1rem' }}>
+                                        <label style={{ display: 'block', fontSize: '0.7rem', color: '#94a3b8', fontWeight: 700, marginBottom: '0.5rem' }}>Hold Reason / Remarks</label>
+                                        <input 
+                                            type="text" 
+                                            value={actionForm.reason}
+                                            onChange={e => setActionForm(f => ({ ...f, reason: e.target.value }))}
+                                            placeholder="E.g. Products not delivered, Site under construction..."
+                                            style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #334155', background: '#0f172a', color: '#f8fafc', outline: 'none' }}
+                                        />
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                        <div style={{ flex: 1 }}>
+                                            <label style={{ display: 'block', fontSize: '0.7rem', color: '#94a3b8', fontWeight: 700, marginBottom: '0.5rem' }}>Buffer Amount</label>
+                                            <input 
+                                                type="number" min="1" 
+                                                value={actionForm.buffer_duration_value}
+                                                onChange={e => setActionForm(f => ({ ...f, buffer_duration_value: parseInt(e.target.value) || 1 }))}
+                                                style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #334155', background: '#0f172a', color: '#f8fafc', outline: 'none' }}
+                                            />
+                                        </div>
+                                        <div style={{ flex: 1 }}>
+                                            <label style={{ display: 'block', fontSize: '0.7rem', color: '#94a3b8', fontWeight: 700, marginBottom: '0.5rem' }}>Unit</label>
+                                            <select 
+                                                value={actionForm.buffer_duration_unit}
+                                                onChange={e => setActionForm(f => ({ ...f, buffer_duration_unit: e.target.value }))}
+                                                style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #334155', background: '#0f172a', color: '#f8fafc', outline: 'none' }}
+                                            >
+                                                <option>Days</option><option>Weeks</option><option>Months</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            
+                            <button 
+                                onClick={submitAction}
+                                disabled={isSubmittingAction}
+                                style={{ width: '100%', padding: '1rem', background: actionForm.option === 1 ? '#3b82f6' : '#f59e0b', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 900, fontSize: '0.9rem', cursor: isSubmittingAction ? 'not-allowed' : 'pointer', transition: 'all 0.2s', boxShadow: '0 4px 15px rgba(0,0,0,0.2)' }}
+                            >
+                                {isSubmittingAction ? 'PROCESSING...' : (actionForm.option === 1 ? 'CONFIRM START' : 'CONFIRM HOLD')}
+                            </button>
+                        </div>
+                    )}
+                    
+                    {pendingActions[activeActionIndex]?.type === 'BUFFER_EXPIRED' && (
+                        <div>
+                            <h2 style={{ fontSize: '1.4rem', color: '#f8fafc', marginBottom: '0.5rem', fontWeight: 800 }}>Buffer Period Expired</h2>
+                            <p style={{ color: '#ef4444', fontSize: '0.85rem', marginBottom: '1.5rem', fontWeight: 600 }}>The requested buffer for this project has elapsed.</p>
+                            
+                            <div style={{ background: '#1e293b', padding: '1rem', borderRadius: '12px', marginBottom: '1.5rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div>
+                                    <div style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 800, letterSpacing: '0.05em' }}>PROJECT NAME</div>
+                                    <div style={{ color: '#f8fafc', fontWeight: 700, fontSize: '0.9rem' }}>{pendingActions[activeActionIndex].project_name}</div>
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 800, letterSpacing: '0.05em' }}>ORIGINAL BUFFER</div>
+                                    <div style={{ color: '#f59e0b', fontWeight: 700, fontSize: '0.9rem' }}>{pendingActions[activeActionIndex].original_buffer || 'N/A'}</div>
+                                </div>
+                            </div>
+                            
+                            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
+                                {[
+                                    { id: 1, label: 'START PROJECT', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+                                    { id: 2, label: 'EXTEND BUFFER', color: '#f59e0b', bg: 'rgba(245,158,11,0.1)' }
+                                ].map(opt => (
+                                    <button 
+                                        key={opt.id}
+                                        onClick={() => setActionForm(f => ({ ...f, option: opt.id }))}
+                                        style={{ flex: 1, padding: '1rem', borderRadius: '12px', border: actionForm.option === opt.id ? `2px solid ${opt.color}` : '2px solid transparent', background: actionForm.option === opt.id ? opt.bg : '#1e293b', color: actionForm.option === opt.id ? opt.color : '#94a3b8', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s' }}
+                                    >
+                                        {opt.label}
+                                    </button>
+                                ))}
+                            </div>
+                            
+                            {actionForm.option === 2 && (
+                                <div style={{ background: '#1e293b', padding: '1rem', borderRadius: '12px', marginBottom: '1.5rem' }}>
+                                    <div style={{ marginBottom: '1rem' }}>
+                                        <label style={{ display: 'block', fontSize: '0.7rem', color: '#94a3b8', fontWeight: 700, marginBottom: '0.5rem' }}>Extension Reason</label>
+                                        <input 
+                                            type="text" 
+                                            value={actionForm.reason}
+                                            onChange={e => setActionForm(f => ({ ...f, reason: e.target.value }))}
+                                            placeholder="Reason for extending the hold..."
+                                            style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #334155', background: '#0f172a', color: '#f8fafc', outline: 'none' }}
+                                        />
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                        <div style={{ flex: 1 }}>
+                                            <label style={{ display: 'block', fontSize: '0.7rem', color: '#94a3b8', fontWeight: 700, marginBottom: '0.5rem' }}>Extension Amount</label>
+                                            <input 
+                                                type="number" min="1" 
+                                                value={actionForm.buffer_duration_value}
+                                                onChange={e => setActionForm(f => ({ ...f, buffer_duration_value: parseInt(e.target.value) || 1 }))}
+                                                style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #334155', background: '#0f172a', color: '#f8fafc', outline: 'none' }}
+                                            />
+                                        </div>
+                                        <div style={{ flex: 1 }}>
+                                            <label style={{ display: 'block', fontSize: '0.7rem', color: '#94a3b8', fontWeight: 700, marginBottom: '0.5rem' }}>Unit</label>
+                                            <select 
+                                                value={actionForm.buffer_duration_unit}
+                                                onChange={e => setActionForm(f => ({ ...f, buffer_duration_unit: e.target.value }))}
+                                                style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #334155', background: '#0f172a', color: '#f8fafc', outline: 'none' }}
+                                            >
+                                                <option>Days</option><option>Weeks</option><option>Months</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            
+                            <button 
+                                onClick={actionForm.option === 1 ? submitAction : submitExtendBuffer}
+                                disabled={isSubmittingAction}
+                                style={{ width: '100%', padding: '1rem', background: actionForm.option === 1 ? '#10b981' : '#f59e0b', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 900, fontSize: '0.9rem', cursor: isSubmittingAction ? 'not-allowed' : 'pointer', transition: 'all 0.2s', boxShadow: '0 4px 15px rgba(0,0,0,0.2)' }}
+                            >
+                                {isSubmittingAction ? 'PROCESSING...' : (actionForm.option === 1 ? 'START PROJECT' : 'SAVE EXTENSION')}
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </motion.div>
+        </div>
+      )}
+      
       <style dangerouslySetInnerHTML={{ __html: `
         .data-table th:not(:last-child), .data-table td:not(:last-child) {
           border-right: 1px solid rgba(0,0,0,0.06);

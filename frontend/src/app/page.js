@@ -135,31 +135,137 @@ export default function LoginPage() {
       display: 'flex', flexDirection: 'column',
       position: 'relative', overflow: 'hidden'
     }}>
-      
-      {/* Interactive Mouse Spotlight & Grid Background */}
-      <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
-        
-        {/* Base Dim Grid (Always full screen) */}
-        <div style={{ 
-          position: 'absolute', inset: 0, opacity: 0.15,
-          backgroundImage: 'linear-gradient(rgba(59, 130, 246, 0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(59, 130, 246, 0.4) 1px, transparent 1px)', 
-          backgroundSize: '40px 40px' 
-        }} />
 
-        {/* Glowing Interactive Grid (Full Page) */}
+      {/* CSS Keyframes for entrance glow */}
+      <style>{`
+        @keyframes gridEntrance {
+          0%   { opacity: 0; }
+          100% { opacity: 1; }
+        }
+        @keyframes glowPulseX {
+          0%   { mask-size: 0px 100vh; -webkit-mask-size: 0px 100vh; opacity: 0; }
+          60%  { mask-size: 300vw 100vh; -webkit-mask-size: 300vw 100vh; opacity: 1; }
+          100% { mask-size: 300vw 100vh; -webkit-mask-size: 300vw 100vh; opacity: 1; }
+        }
+        @keyframes centralBurst {
+          0%   { transform: scale(0); opacity: 0; }
+          50%  { transform: scale(1.8); opacity: 0.6; }
+          100% { transform: scale(1); opacity: 0; }
+        }
+        @keyframes xAxisSweepLeft {
+          0%   { left: 50%; width: 0; opacity: 0.9; }
+          100% { left: -10%; width: 65%; opacity: 0; }
+        }
+        @keyframes xAxisSweepRight {
+          0%   { left: 50%; width: 0; opacity: 0.9; }
+          100% { left: 50%; width: 65%; opacity: 0; }
+        }
+        @keyframes gridScroll {
+          0%   { background-position: 0px 0px; }
+          100% { background-position: 40px 40px; }
+        }
+        @keyframes orbPulse1 {
+          0%, 100% { opacity: 0.1; transform: scale(1); }
+          50%       { opacity: 0.35; transform: scale(1.25); }
+        }
+        @keyframes orbPulse2 {
+          0%, 100% { opacity: 0.08; transform: scale(1); }
+          50%       { opacity: 0.45; transform: scale(1.5); }
+        }
+      `}</style>
+
+      {/* Background layer container */}
+      <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
+
+        {/* === 1. BASE STATIC DIM GRID (always visible) === */}
         <div style={{ 
           position: 'absolute', inset: 0,
-          backgroundImage: 'linear-gradient(rgba(0, 191, 255, 0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 191, 255, 0.8) 1px, transparent 1px)', 
+          backgroundImage: 'linear-gradient(rgba(59,130,246,0.25) 1px, transparent 1px), linear-gradient(90deg, rgba(59,130,246,0.25) 1px, transparent 1px)', 
           backgroundSize: '40px 40px',
+          animation: 'gridEntrance 1.5s ease forwards, gridScroll 5s linear infinite',
+          opacity: 0
+        }} />
+
+        {/* === 2. ENTRANCE BURST — radial glow expanding from center === */}
+        <div style={{
+          position: 'absolute',
+          top: '50%', left: '50%',
+          width: '120vw', height: '120vw',
+          marginLeft: '-60vw', marginTop: '-60vw',
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(0,191,255,0.45) 0%, rgba(0,191,255,0.1) 35%, transparent 70%)',
+          animation: 'centralBurst 1.8s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+          filter: 'blur(20px)'
+        }} />
+
+        {/* === 3. X-AXIS HORIZONTAL SWEEP LEFT === */}
+        <div style={{
+          position: 'absolute',
+          top: '50%', left: '50%',
+          height: '2px', width: 0,
+          background: 'linear-gradient(to left, rgba(0,191,255,0.9), transparent)',
+          boxShadow: '0 0 20px 4px rgba(0,191,255,0.6)',
+          animation: 'xAxisSweepLeft 1.2s ease-out 0.3s forwards',
+          transform: 'translateY(-50%)'
+        }} />
+
+        {/* === 4. X-AXIS HORIZONTAL SWEEP RIGHT === */}
+        <div style={{
+          position: 'absolute',
+          top: '50%', left: '50%',
+          height: '2px', width: 0,
+          background: 'linear-gradient(to right, rgba(0,191,255,0.9), transparent)',
+          boxShadow: '0 0 20px 4px rgba(0,191,255,0.6)',
+          animation: 'xAxisSweepRight 1.2s ease-out 0.3s forwards',
+          transform: 'translateY(-50%)'
+        }} />
+
+        {/* === 5. BRIGHT CYAN GRID — revealed by entrance expanding mask === */}
+        <div style={{ 
+          position: 'absolute', inset: 0,
+          backgroundImage: 'linear-gradient(rgba(0,191,255,0.9) 1px, transparent 1px), linear-gradient(90deg, rgba(0,191,255,0.9) 1px, transparent 1px)', 
+          backgroundSize: '40px 40px',
+          WebkitMaskImage: 'radial-gradient(ellipse at 50% 50%, black 0%, transparent 75%)',
+          maskImage: 'radial-gradient(ellipse at 50% 50%, black 0%, transparent 75%)',
+          WebkitMaskSize: '0px 100vh',
+          maskSize: '0px 100vh',
+          animation: 'glowPulseX 2s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards',
+          opacity: 0
+        }} />
+
+        {/* === 6. HOVER SPOTLIGHT GRID (mouse tracked) === */}
+        <div style={{ 
+          position: 'absolute', inset: 0,
+          backgroundImage: 'linear-gradient(rgba(0,191,255,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(0,191,255,0.8) 1px, transparent 1px)', 
+          backgroundSize: '40px 40px',
+          animation: 'gridScroll 4s linear infinite',
           WebkitMaskImage: `radial-gradient(400px circle at ${mousePos.x}px ${mousePos.y}px, black, transparent)`,
           maskImage: `radial-gradient(400px circle at ${mousePos.x}px ${mousePos.y}px, black, transparent)`
         }} />
 
-        {/* Soft Ambient Spotlight Wash (Full Page) */}
+        {/* === 7. MOUSE AMBIENT GLOW === */}
         <div style={{
           position: 'absolute', inset: 0,
-          background: `radial-gradient(800px circle at ${mousePos.x}px ${mousePos.y}px, rgba(0, 191, 255, 0.15), transparent 50%)`,
-          transition: 'background 0.1s ease'
+          background: `radial-gradient(800px circle at ${mousePos.x}px ${mousePos.y}px, rgba(0,191,255,0.12), transparent 50%)`,
+          transition: 'background 0.08s ease'
+        }} />
+
+        {/* === 8. FLOATING ORB 1 (breathing, top-left area) === */}
+        <div style={{
+          position: 'absolute', top: '15%', left: '25%',
+          width: '500px', height: '500px',
+          background: 'radial-gradient(circle, rgba(0,191,255,0.18) 0%, transparent 70%)',
+          filter: 'blur(60px)',
+          animation: 'orbPulse1 7s ease-in-out infinite'
+        }} />
+
+        {/* === 9. FLOATING ORB 2 (breathing, bottom-right area) === */}
+        <div style={{
+          position: 'absolute', bottom: '5%', right: '15%',
+          width: '600px', height: '600px',
+          background: 'radial-gradient(circle, rgba(59,130,246,0.18) 0%, transparent 70%)',
+          filter: 'blur(70px)',
+          animation: 'orbPulse2 9s ease-in-out 2s infinite'
         }} />
 
       </div>
@@ -262,42 +368,56 @@ export default function LoginPage() {
             letterSpacing: '0.05em',
             whiteSpace: 'nowrap'
           }}>
-            <div style={{ overflow: 'hidden', paddingBottom: '0.1em' }}>
+            <div style={{ overflow: 'hidden', paddingBottom: '0.1em', position: 'relative' }}>
               <motion.div
                 initial={{ y: '100%', opacity: 0, filter: 'blur(10px)' }}
                 animate={{ y: 0, opacity: 1, filter: 'blur(0px)' }}
                 transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.5 }}
-                style={{ display: 'flex' }}
+                style={{ display: 'flex', position: 'relative', WebkitBackgroundClip: 'text' }}
               >
                 E
                 <motion.span
                   initial={{ opacity: 0, rotate: 0 }}
                   animate={{ opacity: 1, rotate: 90 }}
                   transition={{ duration: 1.5, delay: 2.8 }}
-                  style={{ display: 'inline-block', originX: 'center', originY: 'center' }}
+                  style={{ display: 'inline-block', originX: 'center', originY: 'center', color: '#00bfff' }}
                 >
                   V
                 </motion.span>
                 ERY PAGE.
+                {/* Scan line matching the V rotation */}
+                <motion.div
+                  initial={{ left: '-20%' }}
+                  animate={{ left: '120%' }}
+                  transition={{ duration: 1.5, ease: "easeInOut", delay: 2.8 }}
+                  style={{ position: 'absolute', top: 0, bottom: 0, width: '100px', background: 'linear-gradient(90deg, transparent, rgba(0,191,255,0.8), transparent)', transform: 'skewX(-20deg)', mixBlendMode: 'lighten', pointerEvents: 'none' }}
+                />
               </motion.div>
             </div>
-            <div style={{ overflow: 'hidden', paddingBottom: '0.1em' }}>
+            <div style={{ overflow: 'hidden', paddingBottom: '0.1em', position: 'relative' }}>
               <motion.div
                 initial={{ y: '100%', opacity: 0, filter: 'blur(10px)' }}
                 animate={{ y: 0, opacity: 1, filter: 'blur(0px)' }}
                 transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.9 }}
-                style={{ display: 'flex' }}
+                style={{ display: 'flex', position: 'relative', WebkitBackgroundClip: 'text' }}
               >
                 E
                 <motion.span
                   initial={{ opacity: 0, rotate: 0 }}
                   animate={{ opacity: 1, rotate: 90 }}
                   transition={{ duration: 1.5, delay: 3.0 }}
-                  style={{ display: 'inline-block', originX: 'center', originY: 'center' }}
+                  style={{ display: 'inline-block', originX: 'center', originY: 'center', color: '#00bfff' }}
                 >
                   V
                 </motion.span>
                 ERY METRIC.
+                {/* Scan line matching the V rotation */}
+                <motion.div
+                  initial={{ left: '-20%' }}
+                  animate={{ left: '120%' }}
+                  transition={{ duration: 1.5, ease: "easeInOut", delay: 3.0 }}
+                  style={{ position: 'absolute', top: 0, bottom: 0, width: '100px', background: 'linear-gradient(90deg, transparent, rgba(0,191,255,0.8), transparent)', transform: 'skewX(-20deg)', mixBlendMode: 'lighten', pointerEvents: 'none' }}
+                />
               </motion.div>
             </div>
             <div style={{ overflow: 'hidden', paddingBottom: '0.2em' }}>

@@ -52,8 +52,16 @@ class Project(Base):
     mission_owner_email = Column(String, nullable=True)
     deployment_created_by_vp = Column(String, nullable=True)
     deployment_timestamp = Column(DateTime, default=datetime.utcnow)
-    status = Column(String, default="DRAFT") # DRAFT, PROPOSAL, ASSIGNED, ACTIVE, COMPLETED
+    status = Column(String, default="DRAFT") # DRAFT, PROPOSAL, ASSIGNED, ACTIVE, ON HOLD, SITE HOLD, COMPLETED
     start_date = Column(DateTime, nullable=True)
+    end_date = Column(DateTime, nullable=True)
+    
+    # Buffer Management
+    buffer_start_date = Column(DateTime, nullable=True)
+    buffer_end_date = Column(DateTime, nullable=True)
+    buffer_reason = Column(String, nullable=True)
+    buffer_requested_by = Column(String, nullable=True)
+    original_buffer_duration_str = Column(String, nullable=True)
 
     # Project Information Fields
     customer_name = Column(String, nullable=True)

@@ -54,3 +54,17 @@ class FinanceValidation(Base):
     validated_by = Column(String, nullable=False)
     validated_at = Column(DateTime, default=datetime.utcnow)
     status = Column(String, default="PENDING")  # PENDING, VALIDATED
+
+class ProjectHealthSnapshot(Base):
+    __tablename__ = "project_health_snapshots"
+
+    id = Column(Integer, primary_key=True, index=True)
+    project_id = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
+    snapshot_date = Column(DateTime, default=datetime.utcnow)
+    
+    timeline_utilization_pct = Column(Float, default=0.0)
+    cost_utilization_pct = Column(Float, default=0.0)
+    hours_utilization_pct = Column(Float, default=0.0)
+    margin_health = Column(String, default="GREEN")
+    
+    traffic_light = Column(String, default="GREEN") # GREEN, ORANGE, RED

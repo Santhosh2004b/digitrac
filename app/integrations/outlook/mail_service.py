@@ -98,6 +98,73 @@ class MailService:
 
 
     @staticmethod
+    async def send_utilization_alert_mail(
+        subject: str,
+        mission_name: str,
+        recipient_email: str,
+        customer_name: str,
+        pm_name: str,
+        elapsed_days: int,
+        remaining_days: int,
+        target_margin: float,
+        current_margin: float,
+        forecast_margin: float,
+        actual_cost: float
+    ) -> bool:
+        html_body = f"""
+        <div style="font-family: 'Inter', sans-serif; background: #05070f; padding: 2rem; color: #fff;">
+            <h2>{subject}</h2>
+            <p><strong>Project:</strong> {mission_name}</p>
+            <p><strong>Customer:</strong> {customer_name}</p>
+            <p><strong>PM:</strong> {pm_name}</p>
+            <p><strong>Elapsed Days:</strong> {elapsed_days}</p>
+            <p><strong>Remaining Days:</strong> {remaining_days}</p>
+            <p><strong>Target Margin:</strong> {target_margin}%</p>
+            <p><strong>Current Margin:</strong> {current_margin}%</p>
+            <p><strong>Forecast Margin:</strong> {forecast_margin}%</p>
+            <p><strong>Actual Cost:</strong> {actual_cost}</p>
+        </div>
+        """
+        access_token = await TokenManager.get_access_token()
+        success = await GraphClient.send_mail_async(
+            access_token=access_token,
+            sender_email=settings.MICROSOFT_SENDER_EMAIL,
+            recipient_email=recipient_email,
+            subject=subject,
+            html_body=html_body,
+            attachment_path=None
+        )
+        return success
+
+    @staticmethod
+    async def send_buffer_expiry_mail(
+        project_name: str,
+        recipient_email: str,
+        project_id: int
+    ) -> bool:
+        # PM login redirect URL for the popup
+        login_url = f"https://digitrac.arche.global/login?redirect=/manager/dashboard?popup={project_id}"
+        html_body = f"""
+        <div style="font-family: 'Inter', sans-serif; background: #05070f; padding: 2rem; color: #fff;">
+            <h2>Buffer Period Completed</h2>
+            <p>The buffer period for project <strong>{project_name}</strong> has expired.</p>
+            <p>Please choose an action below:</p>
+            <a href="{login_url}" style="padding: 10px 20px; background: #22c55e; color: white; text-decoration: none; border-radius: 4px; display: inline-block; margin-right: 10px;">START PROJECT</a>
+            <a href="{login_url}" style="padding: 10px 20px; background: #eab308; color: white; text-decoration: none; border-radius: 4px; display: inline-block;">EXTEND BUFFER</a>
+        </div>
+        """
+        access_token = await TokenManager.get_access_token()
+        success = await GraphClient.send_mail_async(
+            access_token=access_token,
+            sender_email=settings.MICROSOFT_SENDER_EMAIL,
+            recipient_email=recipient_email,
+            subject=f"BUFFER EXPIRED: {project_name}",
+            html_body=html_body,
+            attachment_path=None
+        )
+        return success
+
+    @staticmethod
     async def send_escalation_alert_mail(
         project_name: str,
         recipient_email: str,
@@ -135,6 +202,41 @@ class MailService:
             sender_email=settings.MICROSOFT_SENDER_EMAIL,
             recipient_email=recipient_email,
             subject=subject,
+            html_body=html_body,
+            attachment_path=None
+        )
+        return success
+
+    @staticmethod
+    async def send_project_hold_mail(
+        project_name: str,
+        recipient_email: str,
+        customer_name: str,
+        pm_name: str,
+        buffer_duration: str,
+        reason: str,
+        expected_resume_date: str,
+        is_site_hold: bool = False
+    ) -> bool:
+        subject_str = "PROJECT DELAY NOTIFICATION" if is_site_hold else "PROJECT ON HOLD"
+        
+        html_body = f"""
+        <div style="font-family: 'Inter', sans-serif; background: #05070f; padding: 2rem; color: #fff;">
+            <h2>{subject_str}</h2>
+            <p><strong>Project:</strong> {project_name}</p>
+            <p><strong>Customer:</strong> {customer_name}</p>
+            <p><strong>PM:</strong> {pm_name}</p>
+            <p><strong>Reason:</strong> {reason}</p>
+            <p><strong>Buffer Duration:</strong> {buffer_duration}</p>
+            <p><strong>Expected Resume Date:</strong> {expected_resume_date}</p>
+        </div>
+        """
+        access_token = await TokenManager.get_access_token()
+        success = await GraphClient.send_mail_async(
+            access_token=access_token,
+            sender_email=settings.MICROSOFT_SENDER_EMAIL,
+            recipient_email=recipient_email,
+            subject=subject_str,
             html_body=html_body,
             attachment_path=None
         )

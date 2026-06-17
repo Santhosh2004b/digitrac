@@ -38,7 +38,174 @@ class TrackingUpdateInput(BaseModel):
     work_start_date: Optional[datetime] = None
     deadline: Optional[datetime] = None
 
-from app.models.project import Project, ProjectResource, ApprovedProject, MissionAssignment
+from app.models.project import Project, ProjectResource, ApprovedProject, MissionAssignment, InAppNotification
+
+class LifecycleStartInput(BaseModel):
+    option: int
+    buffer_duration_value: Optional[int] = None
+    buffer_duration_unit: Optional[str] = None
+    reason: Optional[str] = None
+
+@router.get("/pending-actions")
+def get_pending_actions(db: Session = Depends(get_db), current_manager: User = Depends(get_current_manager)):
+    notifications = db.query(InAppNotification).filter(
+        InAppNotification.pm_email == current_manager.email,
+        InAppNotification.is_read == False
+    ).all()
+    
+    # Enrich with project info
+    result = []
+    for notif in notifications:
+        proj = db.query(Project).filter(Project.id == notif.project_id).first()
+        margin_target = proj.margin_target_pct if proj else 0
+        project_value = proj.total_sell_price if proj else 0
+        
+        result.append({
+            "type": "NEW_ASSIGNMENT",
+            "id": notif.id,
+            "project_id": notif.project_id,
+            "project_name": notif.project_name,
+            "customer_name": notif.customer_name,
+            "assigned_by": notif.assigned_by,
+            "project_duration": notif.project_duration,
+            "margin_target": margin_target,
+            "project_value": project_value,
+            "created_at": notif.created_at.isoformat() if notif.created_at else None
+        })
+        
+    # Expired Buffers
+    from datetime import datetime
+    expired_buffers = db.query(Project).filter(
+        Project.manager_id == current_manager.id,
+        Project.status.in_(["ON HOLD", "SITE HOLD"]),
+        Project.buffer_end_date <= datetime.utcnow()
+    ).all()
+    
+    for proj in expired_buffers:
+        result.append({
+            "type": "BUFFER_EXPIRED",
+            "project_id": proj.id,
+            "project_name": proj.name,
+            "customer_name": proj.customer_name,
+            "original_buffer": proj.original_buffer_duration_str,
+            "buffer_end_date": proj.buffer_end_date.isoformat() if proj.buffer_end_date else None
+        })
+        
+    return result
+
+@router.post("/projects/{project_id}/lifecycle-start")
+async def start_project_lifecycle(
+    project_id: int,
+    payload: LifecycleStartInput,
+    db: Session = Depends(get_db),
+    current_manager: User = Depends(get_current_manager)
+):
+    proj = db.query(Project).filter(Project.id == project_id, Project.manager_id == current_manager.id).first()
+    if not proj:
+        raise HTTPException(status_code=404, detail="Project not found or not assigned to you")
+        
+    notif = db.query(InAppNotification).filter(InAppNotification.project_id == project_id, InAppNotification.pm_email == current_manager.email, InAppNotification.is_read == False).first()
+    if notif:
+        notif.is_read = True
+
+    from datetime import datetime, timedelta
+    
+    if payload.option == 1:
+        proj.status = "ACTIVE"
+        proj.start_date = datetime.utcnow()
+        # Parse duration
+        duration_months = proj.duration_months or 0
+        proj.end_date = proj.start_date + timedelta(days=int(duration_months * 30))
+        
+    elif payload.option in [2, 3]:
+        proj.status = "ON HOLD" if payload.option == 2 else "SITE HOLD"
+        proj.buffer_start_date = datetime.utcnow()
+        proj.buffer_reason = payload.reason
+        proj.buffer_requested_by = current_manager.name
+        
+        days_to_add = 0
+        unit = (payload.buffer_duration_unit or "Days").lower()
+        val = payload.buffer_duration_value or 0
+        
+        proj.original_buffer_duration_str = f"{val} {payload.buffer_duration_unit}"
+        
+        if "day" in unit:
+            days_to_add = val
+        elif "week" in unit:
+            days_to_add = val * 7
+        elif "month" in unit:
+            days_to_add = val * 30
+            
+        proj.buffer_end_date = proj.buffer_start_date + timedelta(days=days_to_add)
+        
+        # Send Email to VP
+        from app.integrations.outlook.mail_service import MailService
+        vp_email = proj.deployment_created_by_vp
+        if vp_email:
+            await MailService.send_project_hold_mail(
+                project_name=proj.name,
+                recipient_email=vp_email,
+                customer_name=proj.customer_name or "Unknown",
+                pm_name=current_manager.name,
+                buffer_duration=proj.original_buffer_duration_str,
+                reason=payload.reason or "Not provided",
+                expected_resume_date=proj.buffer_end_date.strftime("%Y-%m-%d") if proj.buffer_end_date else "Unknown",
+                is_site_hold=(payload.option == 3)
+            )
+            
+    db.commit()
+    return {"status": "success", "message": "Project lifecycle updated successfully"}
+
+class ExtendBufferInput(BaseModel):
+    buffer_duration_value: int
+    buffer_duration_unit: str
+    remarks: str
+
+@router.post("/projects/{project_id}/extend-buffer")
+async def extend_project_buffer(
+    project_id: int,
+    payload: ExtendBufferInput,
+    db: Session = Depends(get_db),
+    current_manager: User = Depends(get_current_manager)
+):
+    proj = db.query(Project).filter(Project.id == project_id, Project.manager_id == current_manager.id).first()
+    if not proj:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    from datetime import datetime, timedelta
+    days_to_add = 0
+    unit = payload.buffer_duration_unit.lower()
+    val = payload.buffer_duration_value
+    
+    if "day" in unit:
+        days_to_add = val
+    elif "week" in unit:
+        days_to_add = val * 7
+    elif "month" in unit:
+        days_to_add = val * 30
+        
+    old_buffer_end = proj.buffer_end_date or datetime.utcnow()
+    proj.buffer_end_date = old_buffer_end + timedelta(days=days_to_add)
+    
+    # Send email
+    from app.integrations.outlook.mail_service import MailService
+    vp_email = proj.deployment_created_by_vp
+    if vp_email:
+        await MailService.send_project_hold_mail(
+            project_name=proj.name,
+            recipient_email=vp_email,
+            customer_name=proj.customer_name or "Unknown",
+            pm_name=current_manager.name,
+            buffer_duration=f"Extended by {val} {unit}",
+            reason=payload.remarks,
+            expected_resume_date=proj.buffer_end_date.strftime("%Y-%m-%d"),
+            is_site_hold=(proj.status == "SITE HOLD")
+        )
+        
+    db.commit()
+    return {"status": "success", "message": "Buffer extended successfully"}
+
+
 
 @router.get("/projects")
 def get_my_projects(db: Session = Depends(get_db), current_manager: User = Depends(get_current_manager), region: str = "GLOBAL"):
