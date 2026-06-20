@@ -266,6 +266,12 @@ async def _approve_assign_project(req: FinalizeRequest, db: Session = Depends(ge
     if not req.manager_email.lower().endswith("@arche.global"):
         raise HTTPException(status_code=403, detail="SECURITY BREACH: Only @arche.global enterprise identities are permitted for assignment.")
 
+    # Check for existing project to prevent duplicates
+    existing_project = db.query(Project).filter(Project.name == req.project_name).first()
+    if existing_project:
+        raise HTTPException(status_code=400, detail=f"Project '{req.project_name}' has already been assigned.")
+
+
     # 1. Ensure Manager User exists
     manager = db.query(User).filter(User.email == req.manager_email).first()
     if not manager:
