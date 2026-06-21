@@ -446,7 +446,7 @@ export default function LoginPage() {
                 onClick={() => { setAuthTab('EXISTING'); setIsSetupMode(false); setError(''); }}
                 style={{ 
                   flex: 1, padding: '0.85rem', 
-                  background: authTab === 'EXISTING' ? '#00bfff' : 'transparent', 
+                  background: authTab === 'EXISTING' ? '#00bfff' : 'rgba(0,191,255,0)', 
                   border: authTab === 'EXISTING' ? 'none' : '1px solid rgba(255,255,255,0.2)', 
                   color: authTab === 'EXISTING' ? '#040b17' : 'rgba(255,255,255,0.6)', 
                   fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.1em', cursor: 'pointer', transition: 'all 0.3s',
@@ -475,7 +475,7 @@ export default function LoginPage() {
                 onClick={() => { setAuthTab('NEW'); setIsSetupMode(false); setError(''); }}
                 style={{ 
                   flex: 1, padding: '0.85rem', 
-                  background: authTab === 'NEW' ? '#00bfff' : 'transparent', 
+                  background: authTab === 'NEW' ? '#00bfff' : 'rgba(0,191,255,0)', 
                   border: authTab === 'NEW' ? 'none' : '1px solid rgba(255,255,255,0.2)', 
                   color: authTab === 'NEW' ? '#040b17' : 'rgba(255,255,255,0.6)', 
                   fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.1em', cursor: 'pointer', transition: 'all 0.3s',
@@ -583,7 +583,7 @@ export default function LoginPage() {
                 transition={{ duration: 0.6, delay: 2.6 }}
                 style={{ 
                   width: '100%', padding: '1rem', 
-                  background: scanning ? 'rgba(0,191,255,0.1)' : 'transparent', 
+                  background: scanning ? 'rgba(0,191,255,0.1)' : 'rgba(0,191,255,0)', 
                   border: '1px solid #00bfff', 
                   color: '#00bfff', fontSize: '0.8rem', fontWeight: 800, letterSpacing: '0.2em', cursor: (loading || scanning) ? 'not-allowed' : 'pointer',
                   position: 'relative', overflow: 'hidden', transition: 'all 0.3s'
