@@ -898,6 +898,7 @@ def get_project_detail(
         "id": project.id,
         "name": project.project_name,
         "resources": resource_data,
+        "implementation_resources": full_data.get("implementation_resources", []) if isinstance(full_data, dict) else [],
         "kpis": kpis,
         "status": traffic_light,
         "approved_by": project.approved_by,
@@ -1256,3 +1257,41 @@ def delete_centralized_resource(
     db.commit()
     return {"status": "success", "message": "Resource deleted"}
 
+@router.post("/projects/{project_id}/resources/{resource_idx}/start")
+def start_resource_tracking(
+    project_id: int,
+    resource_idx: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_manager)
+):
+    from datetime import datetime
+    
+    if current_user.role == "VP" or current_user.role == "PC":
+        project = db.query(ApprovedProject).filter(ApprovedProject.id == project_id).first()
+    else:
+        project = db.query(ApprovedProject).filter(
+            ApprovedProject.id == project_id,
+            func.lower(ApprovedProject.assigned_manager_email) == current_user.email.lower()
+        ).first()
+
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found.")
+
+    full_data = project.full_excel_data
+    if not isinstance(full_data, dict):
+        raise HTTPException(status_code=400, detail="Invalid data format.")
+
+    impl_res = full_data.get("implementation_resources", [])
+    if resource_idx < 0 or resource_idx >= len(impl_res):
+        raise HTTPException(status_code=404, detail="Resource not found.")
+
+    res_item = impl_res[resource_idx]
+    if not res_item.get("start_date"):
+        res_item["start_date"] = datetime.utcnow().isoformat()
+    
+    from sqlalchemy.orm.attributes import flag_modified
+    project.full_excel_data = full_data
+    flag_modified(project, "full_excel_data")
+    db.commit()
+
+    return {"status": "success", "message": "Resource tracking started.", "start_date": res_item["start_date"]}

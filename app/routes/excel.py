@@ -40,15 +40,22 @@ async def upload_excel(file: UploadFile = File(...), current_user = Depends(get_
         with open(artifact_path, "wb") as f:
             f.write(contents)
 
-        if not file.filename.lower().endswith(('.xlsx', '.xls')):
-            raise HTTPException(status_code=400, detail="Please upload a valid Excel file.")
-
-        # Read ALL sheets with NO header so we can detect structure ourselves
-        all_sheets = pd.read_excel(io.BytesIO(contents), engine='openpyxl', sheet_name=None, header=None)
+        if file.filename.lower().endswith('.csv'):
+            try:
+                df = pd.read_csv(io.BytesIO(contents), header=None, encoding='utf-8')
+            except UnicodeDecodeError:
+                df = pd.read_csv(io.BytesIO(contents), header=None, encoding='latin1')
+            all_sheets = {file.filename: df}
+        elif file.filename.lower().endswith(('.xlsx', '.xls')):
+            # Read ALL sheets with NO header so we can detect structure ourselves
+            all_sheets = pd.read_excel(io.BytesIO(contents), engine='openpyxl', sheet_name=None, header=None)
+        else:
+            raise HTTPException(status_code=400, detail="Please upload a valid Excel (.xlsx, .xls) or CSV (.csv) file.")
 
         project_info = {}
         project_costing = []
         workforce_budget = []
+        implementation_resources = []
 
         # ── Labels to scan for across all sheets (label cell → adjacent value cell) ──
         info_keys = {
@@ -113,10 +120,16 @@ async def upload_excel(file: UploadFile = File(...), current_user = Depends(get_
                         break
 
                 if header_row_idx is not None:
-                    df_cost = pd.read_excel(
-                        io.BytesIO(contents), engine='openpyxl',
-                        sheet_name=sheet_name, header=header_row_idx
-                    )
+                    if file.filename.lower().endswith('.csv'):
+                        try:
+                            df_cost = pd.read_csv(io.BytesIO(contents), header=header_row_idx, encoding='utf-8')
+                        except UnicodeDecodeError:
+                            df_cost = pd.read_csv(io.BytesIO(contents), header=header_row_idx, encoding='latin1')
+                    else:
+                        df_cost = pd.read_excel(
+                            io.BytesIO(contents), engine='openpyxl',
+                            sheet_name=sheet_name, header=header_row_idx
+                        )
                     df_cost.columns = [str(c).strip() for c in df_cost.columns]
 
                     # Map flexible column names → standard keys
@@ -176,7 +189,7 @@ async def upload_excel(file: UploadFile = File(...), current_user = Depends(get_
             # ── 3. Workforce Budget — "Workforce Budget" sheet ────────────────
             # Structure: grades are column headers in a row (D2, D1, C4, C3…A2),
             # costs in the rows immediately below (per day, per hour).
-            if "workforce" in sheet_lower and not workforce_budget:
+            if ("workforce" in sheet_lower or len(all_sheets) == 1) and not workforce_budget:
                 grade_row_idx = None
                 for r_idx, row in df.iterrows():
                     row_vals = [str(v).strip() for v in row.values if not pd.isna(v)]
@@ -214,6 +227,59 @@ async def upload_excel(file: UploadFile = File(...), current_user = Depends(get_
                                 "Manpower Cost/Hour": hour_cost,
                             })
 
+            # ── 4. Implementation Resources — "Implementation Resources" sheet ────────────────
+            if ("implementation" in sheet_lower or "resource" in sheet_lower or len(all_sheets) == 1) and not implementation_resources:
+                # Find header row with resource names, or assume standard structure
+                header_row_idx = None
+                for r_idx, row in df.iterrows():
+                    row_lower = [str(v).lower().strip() for v in row.values if not pd.isna(v)]
+                    hits = sum(1 for t in ["resource", "name", "role", "qty", "quantity", "months", "duration", "manmonth", "total"] if any(t in c for c in row_lower))
+                    if hits >= 2:
+                        header_row_idx = r_idx
+                        break
+
+                if header_row_idx is not None:
+                    if file.filename.lower().endswith('.csv'):
+                        try:
+                            df_impl = pd.read_csv(io.BytesIO(contents), header=header_row_idx, encoding='utf-8')
+                        except UnicodeDecodeError:
+                            df_impl = pd.read_csv(io.BytesIO(contents), header=header_row_idx, encoding='latin1')
+                    else:
+                        df_impl = pd.read_excel(
+                            io.BytesIO(contents), engine='openpyxl',
+                            sheet_name=sheet_name, header=header_row_idx
+                        )
+                    df_impl.columns = [str(c).strip() for c in df_impl.columns]
+                    
+                    col_map = {}
+                    for col in df_impl.columns:
+                        cl = col.lower()
+                        if "resource" in cl or "name" in cl or "role" in cl: col_map["Resource Name"] = col
+                        elif "qty" in cl or "quantity" in cl: col_map["Qty"] = col
+                        elif "month" in cl or "duration" in cl: col_map["Months"] = col
+                        elif "total" in cl or "manmonth" in cl or "man-month" in cl: col_map["Total Manmonths"] = col
+
+                    res_col = col_map.get("Resource Name")
+                    if res_col:
+                        for _, row in df_impl.iterrows():
+                            res_val = row.get(res_col)
+                            if pd.isna(res_val) or str(res_val).strip().lower() in ["nan", "", "total"]:
+                                continue
+                            
+                            qty = safe_parse_numeric(row.get(col_map.get("Qty")))
+                            months = safe_parse_numeric(row.get(col_map.get("Months")))
+                            manmonths = safe_parse_numeric(row.get(col_map.get("Total Manmonths")))
+                            
+                            if qty > 0 or months > 0 or manmonths > 0:
+                                implementation_resources.append({
+                                    "Resource Name": str(res_val).strip(),
+                                    "Qty": qty,
+                                    "Months": months,
+                                    "Total Manmonths": manmonths,
+                                    "start_date": None,
+                                    "utilization": 0
+                                })
+
         # ── Numeric coercion for project_info ────────────────────────────────
         num_fields = [
             "total_cost_price", "total_sell_price", "gst", "total_sell_price_with_gst",
@@ -227,22 +293,86 @@ async def upload_excel(file: UploadFile = File(...), current_user = Depends(get_
                     val *= 100.0
                 project_info[f] = val
 
+        if not project_info.get("project_name") or str(project_info.get("project_name")).lower() in ["n/a", "nan", ""]:
+            project_info["project_name"] = os.path.splitext(file.filename)[0]
+            
+        if not project_info.get("customer_name") or str(project_info.get("customer_name")).lower() in ["n/a", "nan", ""]:
+            project_info["customer_name"] = "Pending Customer Info"
+
         result = {
             "summary": {
                 **project_info,
                 "artifact_path": artifact_path,
                 "costing_item_count": len(project_costing),
                 "workforce_item_count": len(workforce_budget),
+                "implementation_resources_count": len(implementation_resources),
             },
             "project_costing": project_costing,
             "workforce_budget": workforce_budget,
+            "implementation_resources": implementation_resources,
         }
 
         return result
+    except HTTPException:
+        raise
     except Exception as e:
         import traceback
-        print(traceback.format_exc())
+        tb_str = traceback.format_exc()
+        print(tb_str)
+        try:
+            with open("excel_error.txt", "w", encoding="utf-8") as f:
+                f.write(tb_str)
+        except Exception:
+            pass
         raise HTTPException(status_code=500, detail=f"Analysis Failed: {str(e)}")
+
+@router.get("/test-parser")
+async def debug_parser():
+    try:
+        import glob
+        xlsx_files = glob.glob("artifacts/uploads/*.xlsx")
+        if not xlsx_files: return {"error": "No xlsx files"}
+        latest = max(xlsx_files, key=os.path.getmtime)
+        with open(latest, "rb") as f: contents = f.read()
+        all_sheets = pd.read_excel(io.BytesIO(contents), engine='openpyxl', sheet_name=None, header=None)
+        
+        implementation_resources = []
+        for sheet_name, df in all_sheets.items():
+            sheet_lower = sheet_name.lower().strip()
+            if ("implementation" in sheet_lower or "resource" in sheet_lower or len(all_sheets) == 1):
+                header_row_idx = None
+                for r_idx, row in df.iterrows():
+                    row_lower = [str(v).lower().strip() for v in row.values if not pd.isna(v)]
+                    hits = sum(1 for t in ["resource", "name", "role", "qty", "quantity", "months", "duration", "manmonth", "total"] if any(t in c for c in row_lower))
+                    if hits >= 2:
+                        header_row_idx = r_idx
+                        break
+                if header_row_idx is not None:
+                    df_impl = pd.read_excel(io.BytesIO(contents), engine='openpyxl', sheet_name=sheet_name, header=header_row_idx)
+                    df_impl.columns = [str(c).strip() for c in df_impl.columns]
+                    col_map = {}
+                    for col in df_impl.columns:
+                        cl = col.lower()
+                        if "resource" in cl or "name" in cl or "role" in cl: col_map["Resource Name"] = col
+                        elif "qty" in cl or "quantity" in cl: col_map["Qty"] = col
+                        elif "month" in cl or "duration" in cl: col_map["Months"] = col
+                        elif "total" in cl or "manmonth" in cl or "man-month" in cl: col_map["Total Manmonths"] = col
+
+                    res_col = col_map.get("Resource Name")
+                    if res_col:
+                        for _, row in df_impl.iterrows():
+                            res_val = row.get(res_col)
+                            if pd.isna(res_val) or str(res_val).strip().lower() in ["nan", "", "total"]: continue
+                            qty = safe_parse_numeric(row.get(col_map.get("Qty")))
+                            months = safe_parse_numeric(row.get(col_map.get("Months")))
+                            manmonths = safe_parse_numeric(row.get(col_map.get("Total Manmonths")))
+                            if qty > 0 or months > 0 or manmonths > 0:
+                                implementation_resources.append({"Resource Name": str(res_val).strip(), "Qty": qty})
+        return {"file": os.path.basename(latest), "impl_resources": implementation_resources, "sheet_names": list(all_sheets.keys())}
+    except Exception as e:
+        import traceback
+        return {"error": traceback.format_exc()}
+
 
 
 class FinalizeRequest(BaseModel):
@@ -251,6 +381,7 @@ class FinalizeRequest(BaseModel):
     summary: dict
     project_costing: List[dict]
     workforce_budget: List[dict]
+    implementation_resources: Optional[List[dict]] = []
 
 @router.post("/approve-assign")
 async def approve_assign_project(req: FinalizeRequest, db: Session = Depends(get_db), current_user = Depends(get_current_vp)):
@@ -266,10 +397,13 @@ async def _approve_assign_project(req: FinalizeRequest, db: Session = Depends(ge
     if not req.manager_email.lower().endswith("@arche.global"):
         raise HTTPException(status_code=403, detail="SECURITY BREACH: Only @arche.global enterprise identities are permitted for assignment.")
 
-    # Check for existing project to prevent duplicates
-    existing_project = db.query(Project).filter(Project.name == req.project_name).first()
+    # Auto-version if project name already exists to prevent 400 errors on re-assignment
+    base_name = req.project_name
+    existing_project = db.query(Project).filter(Project.name == base_name).first()
     if existing_project:
-        raise HTTPException(status_code=400, detail=f"Project '{req.project_name}' has already been assigned.")
+        from datetime import datetime
+        req = req.copy(update={"project_name": f"{base_name} ({datetime.now().strftime('%d%b%Y %H:%M')})"})
+
 
 
     # 1. Ensure Manager User exists
@@ -297,7 +431,8 @@ async def _approve_assign_project(req: FinalizeRequest, db: Session = Depends(ge
         full_excel_data={
             "project_info": req.summary,
             "project_costing": req.project_costing,
-            "workforce_budget": req.workforce_budget
+            "workforce_budget": req.workforce_budget,
+            "implementation_resources": req.implementation_resources or []
         }
     )
     db.add(approved)
@@ -430,3 +565,4 @@ async def preview_assignment_mail(req: FinalizeRequest, current_user = Depends(g
         "from_email": current_user.email,
         "to_email": req.manager_email
     }
+

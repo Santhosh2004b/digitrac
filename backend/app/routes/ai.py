@@ -3,7 +3,8 @@ from pydantic import BaseModel
 from typing import Dict, Any, List
 import json
 
-from app.routes.auth import get_current_user_from_token
+from app.utils.deps import get_current_user
+from app.models.user import User
 from app.db.session import SessionLocal
 from app.models.project import ApprovedProject
 
@@ -19,13 +20,13 @@ class ChatResponse(BaseModel):
     answer: str
     
 @router.post("/chat", response_model=ChatResponse)
-def ai_chat(request: ChatRequest, user: dict = Depends(get_current_user_from_token)):
-    if user.get("role") not in ["VP", "MNG"]:
+def ai_chat(request: ChatRequest, user: User = Depends(get_current_user)):
+    if user.role not in ["VP", "MNG"]:
         raise HTTPException(status_code=403, detail="Only VPs and Managers can access the strategic AI intelligence.")
         
     db = SessionLocal()
     try:
-        role = user.get("role")
+        role = user.role
         q = request.question.lower()
         ans = "I am a LangChain skeleton. Once you plug in your API keys, I will dynamically answer this based on the project database!"
 
@@ -67,7 +68,7 @@ def ai_chat(request: ChatRequest, user: dict = Depends(get_current_user_from_tok
                 ans = f"Across the enterprise, the estimated planned cost footprint is approximately ₹{planned:,.2f}, with actual incurred costs sitting at ₹{actual:,.2f}."
 
         elif role == "MNG":
-            manager_email = user.get("email")
+            manager_email = user.email
             projects = db.query(ApprovedProject).filter(ApprovedProject.manager_email == manager_email).all()
             
             if "current burn rate" in q:

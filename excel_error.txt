@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\Digitrac\app\routes\excel.py", line 37, in upload_excel
+    os.makedirs("artifacts/uploads", exist_ok=True)
+    ^^
+UnboundLocalError: cannot access local variable 'os' where it is not associated with a value

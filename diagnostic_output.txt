@@ -1,0 +1,5 @@
+SUCCESS PARSING!
+info: {'account_manager': 'Mohan D', 'customer_name': 'Elgi Equipment Limited', 'sbu': 'SITC/AMC/Product', 'project_name': 'GSC Plant 8Port Switches', 'margin_target': '0.15', 'project_duration': '3 to 4 Weeks from the date of PO', 'customer_payment_terms': 'Immediate against Delivery', 'vendor_payment_terms': 'Immediate against Delivery', 'po_reference': 'CAP001922', 'amendment_details': 'Nil', 'total_cost_price': '36000', 'total_sell_price': '48000', 'gst': '8640', 'total_sell_price_with_gst': '56640', 'pmc_cost': '1022.7275', 'margin_amount': '10977.2725', 'margin_pct': '0.2286931770833333', 'implementation_cost': 'Man Hours'}
+costing count: 1
+workforce count: 12
+impl count: 0

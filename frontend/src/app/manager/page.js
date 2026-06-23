@@ -72,6 +72,7 @@ export default function ManagerDashboard() {
   
 
   const [projects, setProjects] = useState([]);
+  const [toast, setToast] = useState({ show: false, type: 'success', message: '' });
 
   const [selectedProject, setSelectedProject] = useState(null);
 
@@ -91,8 +92,6 @@ export default function ManagerDashboard() {
   const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState(false);
   const [hoverRowId, setHoverRowId] = useState(null);
 
-
-
   // Resource Assignment Modals & Data
 
   const [centralResources, setCentralResources] = useState([]);
@@ -100,6 +99,14 @@ export default function ManagerDashboard() {
   const [showAssignModal, setShowAssignModal] = useState(false);
 
   const [assignItem, setAssignItem] = useState(null);
+
+  const [showTrackingModal, setShowTrackingModal] = useState(false);
+  const [trackingItem, setTrackingItem] = useState(null);
+  const [trackingForm, setTrackingForm] = useState({ start_date: '', actual_end_date: '', individuals: [] });
+  const [showWeeklyModal, setShowWeeklyModal] = useState(false);
+  const [weeklyItem, setWeeklyItem] = useState(null);
+  const [weeklyForm, setWeeklyForm] = useState({ week_number: 1, progress_pct: 0 });
+  const [isCustomProgress, setIsCustomProgress] = useState(false);
 
   const [assignForm, setAssignForm] = useState({ assigned_person: '', start_date: '', planned_hours: 0, travel_cost: 0, food_cost: 0, stay_cost: 0, other_cost: 0, manhour_cost_per_day: 0, manpower_cost_per_hour: 0 });
 
@@ -126,7 +133,27 @@ export default function ManagerDashboard() {
   const [logForm, setLogForm] = useState({ date: '', hours: 0, remarks: '' });
 
   // AI Chat Box State
-  const [isChatOpen, setIsChatOpen] = useState(true);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const chatRef = React.useRef(null);
+
+  useEffect(() => {
+    let timer;
+    if (isChatOpen) {
+      timer = setTimeout(() => setIsChatOpen(false), 5000);
+    }
+    return () => clearTimeout(timer);
+  }, [isChatOpen]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (chatRef.current && !chatRef.current.contains(event.target)) {
+        setIsChatOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const [chatMessages, setChatMessages] = useState([
     { role: 'ai', content: 'Hello Manager! I am your tactical AI assistant. Select a question below to analyze your projects:' }
   ]);
@@ -176,7 +203,10 @@ export default function ManagerDashboard() {
 
   const fetchProjects = async () => {
     const res = await fetchWithAuth(`${API}/manager/projects`);
-    if (res?.ok) setProjects(await res.json());
+    if (res?.ok) {
+      const data = await res.json();
+      setProjects(data.sort((a, b) => b.id - a.id));
+    }
   };
 
 
@@ -297,23 +327,15 @@ export default function ManagerDashboard() {
 
 
   const handleNotificationClick = async (notif) => {
-
     try {
-
       await fetch(`${API}/notifications/${notif.id}/read`, { method: 'POST', headers: { Authorization: `Bearer ${tok()}` } });
-
       fetchNotifications();
-
     } catch(e) {}
-
     setShowNotifications(false);
-
     if (notif.project_id) {
-
-        loadProject(notif.project_id);
-
+        await loadProject(notif.project_id);
+        setActiveTab('RESOURCES');
     }
-
   };
 
 
@@ -747,9 +769,29 @@ export default function ManagerDashboard() {
             }}>Dashboard</span>
           </motion.div>
 
-          
-
-
+          <motion.div 
+            onClick={() => { setActiveTab('RESOURCES'); setSelectedProject(null); }} 
+            animate={activeTab === 'RESOURCES' ? { boxShadow: ['inset 2px 0 0 #3b82f6, inset 0 0 10px rgba(59,130,246,0.05)', 'inset 2px 0 0 #3b82f6, inset 0 0 30px rgba(59,130,246,0.25)', 'inset 2px 0 0 #3b82f6, inset 0 0 10px rgba(59,130,246,0.05)'] } : { boxShadow: 'inset 0 0 0 transparent' }}
+            transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+            style={{ 
+              display:'flex', alignItems:'center', justifyContent: isSidebarOpen ? 'flex-start' : 'center', gap: isSidebarOpen ? '0.75rem' : '0', padding:'0.85rem 1rem', borderRadius:'8px', fontSize:'0.85rem', fontWeight:600, 
+              background: activeTab === 'RESOURCES' ? 'rgba(59,130,246,0.08)' : 'transparent', 
+              color: activeTab === 'RESOURCES' ? '#60a5fa' : '#64748b', 
+              cursor: 'pointer', transition: 'background 0.3s, color 0.3s, justify-content 0.3s, gap 0.3s'
+            }}
+            onMouseOver={e => { if(activeTab !== 'RESOURCES') { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.color = '#e2e8f0'; } }}
+            onMouseOut={e => { if(activeTab !== 'RESOURCES') { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#64748b'; } }}
+          >
+            <Icons.Folder />
+            <span style={{ 
+              opacity: isSidebarOpen ? 1 : 0, 
+              width: isSidebarOpen ? 'auto' : 0,
+              visibility: isSidebarOpen ? 'visible' : 'hidden',
+              transition: isSidebarOpen ? 'opacity 0.5s ease 1.5s, visibility 0s 1.5s' : 'opacity 0.5s ease 0s, visibility 0s 0.5s, width 0.5s',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden'
+            }}>Resources</span>
+          </motion.div>
 
 
 
@@ -842,7 +884,7 @@ export default function ManagerDashboard() {
             {/* Left: Title or Active Project Chip */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1, minWidth: 0 }}>
               {!selectedProject ? (
-                <h1 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0, color: '#0f172a', whiteSpace: 'nowrap' }}>Project Hub</h1>
+                <h1 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0, color: '#0f172a', whiteSpace: 'nowrap' }}>My Projects</h1>
               ) : (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)', border: '1px solid #bfdbfe', borderRadius: '20px', padding: '0.4rem 0.5rem 0.4rem 1rem', maxWidth: '400px', boxShadow: '0 2px 8px rgba(37,99,235,0.1)' }}>
                   <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: selectedProject.status === 'Red' ? '#ef4444' : selectedProject.status === 'Orange' ? '#f59e0b' : '#10b981', flexShrink: 0, boxShadow: `0 0 6px ${selectedProject.status === 'Red' ? '#ef4444' : selectedProject.status === 'Orange' ? '#f59e0b' : '#10b981'}` }}></div>
@@ -960,11 +1002,12 @@ export default function ManagerDashboard() {
                     <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: n.is_read ? '#f1f5f9' : '#bfdbfe', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '0.9rem' }}>{n.is_read ? '📁' : '🚀'}</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.25rem' }}>
-                        <span style={{ fontSize: '0.75rem', fontWeight: 800, color: n.is_read ? '#64748b' : '#0f172a' }}>Project Assigned</span>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 800, color: n.is_read ? '#64748b' : '#0f172a' }}>New Resource Allocation Available</span>
                         {!n.is_read && <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#3b82f6', flexShrink: 0, marginTop: '4px', boxShadow: '0 0 6px rgba(59,130,246,0.4)' }}></span>}
                       </div>
                       <div style={{ fontSize: '0.7rem', color: '#2563eb', fontWeight: 700, marginBottom: '0.15rem' }}>{n.project_name}</div>
-                      <div style={{ fontSize: '0.65rem', color: '#64748b' }}>Click to open project details</div>
+                      <div style={{ fontSize: '0.65rem', color: '#64748b', marginBottom: '0.15rem' }}>{n.customer_name} • {n.created_at ? new Date(n.created_at).toLocaleDateString() : 'Just now'}</div>
+                      <div style={{ fontSize: '0.65rem', color: '#94a3b8' }}>Click to view resource tracking details</div>
                     </div>
                   </div>
                 ))}
@@ -977,14 +1020,14 @@ export default function ManagerDashboard() {
 
         <div id="main-scroll-container" style={{ flex: 1, padding: '1rem 1.5rem', overflowY: 'auto', scrollBehavior: 'smooth' }}>
 
-            {activeTab === 'DASHBOARD' && !selectedProject && (
+            {(activeTab === 'DASHBOARD' || activeTab === 'RESOURCES') && !selectedProject && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', height: '100%' }}>
 
                     {/* Compact Header + KPI inline row */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'linear-gradient(135deg, #0f172a, #1e293b)', borderRadius: '10px', padding: '0.75rem 1.25rem', flexWrap: 'wrap', gap: '0.5rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                             <div>
-                                <div style={{ fontSize: '0.55rem', fontWeight: 800, color: '#3b82f6', letterSpacing: '0.12em' }}>COMMAND CENTER</div>
+                                <div style={{ fontSize: '0.55rem', fontWeight: 800, color: '#3b82f6', letterSpacing: '0.12em' }}>DASHBOARD</div>
                                 <div style={{ fontSize: '1rem', fontWeight: 900, color: '#f8fafc', letterSpacing: '-0.02em' }}>Portfolio Overview</div>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: '20px', padding: '0.2rem 0.6rem' }}>
@@ -1088,8 +1131,6 @@ export default function ManagerDashboard() {
             )}
 
 
-
-
             {activeTab === 'PROJECTS' && selectedProject && (
                 <motion.div 
                     initial="hidden" 
@@ -1183,7 +1224,7 @@ export default function ManagerDashboard() {
                     {/* Tabs Navigation */}
                     <motion.div variants={{ hidden: { opacity: 0, y: 15 }, show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } } }} style={{ display: 'flex', borderBottom: '1px solid #cbd5e1', marginBottom: '0.75rem' }}>
 
-                        {['COSTING', 'WORKFORCE', 'OVERVIEW', 'EXTENSIONS'].map(tab => (
+                        {['COSTING', 'IMPLEMENTATION', 'WORKFORCE', 'EXTENSIONS'].map(tab => (
                             <div 
                                 key={tab} 
                                 onClick={() => setInnerTab(tab)}
@@ -1196,7 +1237,7 @@ export default function ManagerDashboard() {
                                     borderBottom: innerTab === tab ? '2px solid #2563eb' : '2px solid transparent'
                                 }}
                             >
-                                {tab === 'COSTING' ? 'Project Costing' : tab === 'WORKFORCE' ? 'Workforce Budget' : tab === 'OVERVIEW' ? 'Project Overview' : 'Extensions'}
+                                {tab === 'COSTING' ? 'Project Costing' : tab === 'IMPLEMENTATION' ? 'Implementation Resources' : tab === 'WORKFORCE' ? 'Workforce Budget' : 'Extensions'}
                             </div>
                         ))}
 
@@ -1436,6 +1477,180 @@ export default function ManagerDashboard() {
                             </div>
                             </div>
                         )}
+                        {innerTab === 'IMPLEMENTATION' && (() => {
+                            const implResources = selectedProject.implementation_resources || [];
+                            const unstarted = implResources.filter(r => !r.start_date);
+                            const allActive = unstarted.length === 0 && implResources.length > 0;
+
+                            const activateAll = async () => {
+                                const pending = implResources.map((r, idx) => ({ r, idx })).filter(({ r }) => !r.start_date);
+                                await Promise.all(pending.map(({ idx }) =>
+                                    fetch(`${API}/manager/projects/${selectedProject.id}/resources/${idx}/start`, {
+                                        method: 'POST',
+                                        headers: { Authorization: `Bearer ${tok()}` }
+                                    })
+                                ));
+                                loadProject(selectedProject.id);
+                            };
+
+                            return (
+                            <div>
+                                {/* Toolbar */}
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', borderRadius: '8px 8px 0 0' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0f172a' }}>
+                                            {implResources.length} Resource{implResources.length !== 1 ? 's' : ''}
+                                        </span>
+                                        <span style={{ fontSize: '0.7rem', color: '#64748b' }}>
+                                            · {implResources.filter(r => r.start_date).length} Tracking · {unstarted.length} Pending
+                                        </span>
+                                    </div>
+                                    {allActive ? (
+                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.4rem 1rem', borderRadius: '6px', background: '#d1fae5', color: '#059669', fontSize: '0.75rem', fontWeight: 800 }}>
+                                            ✓ All Tracking Active
+                                        </span>
+                                    ) : (
+                                        <button
+                                            onClick={activateAll}
+                                            disabled={implResources.length === 0}
+                                            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.4rem 1rem', borderRadius: '6px', background: '#10b981', color: '#fff', border: 'none', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer', boxShadow: '0 2px 8px rgba(16,185,129,0.3)', transition: 'all 0.2s' }}
+                                            onMouseOver={e => e.currentTarget.style.background = '#059669'}
+                                            onMouseOut={e => e.currentTarget.style.background = '#10b981'}
+                                        >
+                                            ▶ Activate All ({unstarted.length})
+                                        </button>
+                                    )}
+                                </div>
+                                <div style={{ overflowX: 'auto' }}>
+                                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.8rem' }}>
+
+                                    <thead>
+                                        <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                                            <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 700 }}>RESOURCE NAME</th>
+                                            <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 700 }}>PERSON NAME</th>
+                                            <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 700 }}>QTY</th>
+                                            <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 700 }}>PLANNED DURATION</th>
+                                            <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 700 }}>ACTUAL DURATION</th>
+                                            <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 700 }}>PROGRESS (EXP VS ACT)</th>
+                                            <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 700 }}>VARIANCE %</th>
+                                            <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 700 }}>STATUS</th>
+                                            <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 700 }}>ACTION / REPORT</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {(!selectedProject.implementation_resources || selectedProject.implementation_resources.length === 0) ? (
+                                            <tr>
+                                                <td colSpan="10" style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>
+                                                    No implementation resources extracted for this project.
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            selectedProject.implementation_resources.flatMap((res, resIdx) => {
+                                                const startDate = res.start_date ? new Date(res.start_date) : null;
+                                                let expectedEndDateStr = "—";
+                                                if (startDate && res.Months > 0) {
+                                                    const end = new Date(startDate);
+                                                    end.setMonth(end.getMonth() + res.Months);
+                                                    expectedEndDateStr = end.toISOString().split('T')[0];
+                                                }
+                                                
+                                                if (!res.individuals || res.individuals.length === 0) {
+                                                    // Render Category Row for Start Tracking
+                                                    return [(
+                                                        <tr key={`cat-${resIdx}`} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                                            <td style={{ padding: '0.75rem 1rem', fontWeight: 600, color: '#0f172a' }}>{res['Resource Name']}</td>
+                                                            <td style={{ padding: '0.75rem 1rem', color: '#94a3b8', fontStyle: 'italic' }}>Pending Assign</td>
+                                                            <td style={{ padding: '0.75rem 1rem', color: '#475569' }}>{res.Qty || 0}</td>
+                                                            <td style={{ padding: '0.75rem 1rem', color: '#475569' }}>{res.Months || 0} Mo</td>
+                                                            <td style={{ padding: '0.75rem 1rem', color: '#94a3b8' }}>—</td>
+                                                            <td style={{ padding: '0.75rem 1rem', color: '#94a3b8' }}>—</td>
+                                                            <td style={{ padding: '0.75rem 1rem', color: '#94a3b8' }}>—</td>
+                                                            <td style={{ padding: '0.75rem 1rem' }}>
+                                                                <span style={{ display: 'inline-block', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 800, background: `#94a3b822`, color: '#94a3b8', textTransform: 'uppercase' }}>PENDING</span>
+                                                            </td>
+                                                            <td style={{ padding: '0.75rem 1rem' }}>
+                                                                <button 
+                                                                    onClick={() => {
+                                                                        const qty = parseInt(res.Qty) || 1;
+                                                                        setTrackingItem({ res, idx: resIdx });
+                                                                        setTrackingForm({ start_date: new Date().toISOString().split('T')[0], actual_end_date: '', individuals: Array.from({ length: qty }, () => ({ name: '', email: '' })) });
+                                                                        setShowTrackingModal(true);
+                                                                    }}
+                                                                    style={{ background: '#10b981', color: '#fff', border: 'none', padding: '0.4rem 0.75rem', borderRadius: '4px', cursor: 'pointer', fontWeight: 600, fontSize: '0.7rem', whiteSpace: 'nowrap' }}
+                                                                >
+                                                                    Start Tracking
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    )];
+                                                } else {
+                                                    // Render Individuals
+                                                    return res.individuals.map((ind, indIdx) => {
+                                                        // Calc expected
+                                                        let expectedPct = 0;
+                                                        if (startDate) {
+                                                            const elapsedDays = (new Date() - startDate) / (1000 * 60 * 60 * 24);
+                                                            const elapsedMonths = elapsedDays / 30.0;
+                                                            expectedPct = Math.min(100, (elapsedMonths / (res.Months || 1)) * 100);
+                                                        }
+                                                        let dynStatus = 'GREEN';
+                                                        if (ind.actual_pct >= expectedPct) dynStatus = 'GREEN';
+                                                        else if (ind.actual_pct >= (expectedPct - 10)) dynStatus = 'ORANGE';
+                                                        else dynStatus = 'RED';
+                                                        const statusColor = dynStatus === 'RED' ? '#ef4444' : dynStatus === 'ORANGE' ? '#f59e0b' : '#10b981';
+                                                        const dynVar = parseFloat((ind.actual_pct - expectedPct).toFixed(1));
+                                                        
+                                                        return (
+                                                            <tr key={`ind-${resIdx}-${indIdx}`} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                                                <td style={{ padding: '0.75rem 1rem', fontWeight: 600, color: '#0f172a' }}>{indIdx === 0 ? res['Resource Name'] : ''}</td>
+                                                                <td style={{ padding: '0.75rem 1rem', color: '#0f172a', fontWeight: 700 }}>{ind.name}</td>
+                                                                <td style={{ padding: '0.75rem 1rem', color: '#475569' }}>{indIdx === 0 ? res.Qty : ''}</td>
+                                                                <td style={{ padding: '0.75rem 1rem', color: '#475569' }}>{indIdx === 0 ? (res.Months || 0) + ' Mo' : ''}</td>
+                                                                <td style={{ padding: '0.75rem 1rem', color: '#475569' }}>{indIdx === 0 && res.actual_duration ? res.actual_duration + ' Mo' : '—'}</td>
+                                                                <td style={{ padding: '0.75rem 1rem', minWidth: '150px' }}>
+                                                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', marginBottom: '0.3rem' }}>
+                                                                        <span style={{ color: '#64748b', fontWeight: 600 }}>Exp: {expectedPct.toFixed(1)}%</span>
+                                                                        <span style={{ color: '#0f172a', fontWeight: 800 }}>Act: {ind.actual_pct}%</span>
+                                                                    </div>
+                                                                    <div style={{ position: 'relative', height: '6px', background: '#e2e8f0', borderRadius: '3px', overflow: 'hidden' }}>
+                                                                        {/* Expected Bar */}
+                                                                        <div style={{ position: 'absolute', top: 0, left: 0, height: '100%', width: `${expectedPct}%`, background: '#cbd5e1', zIndex: 1 }}></div>
+                                                                        {/* Actual Bar */}
+                                                                        <div style={{ position: 'absolute', top: 0, left: 0, height: '100%', width: `${Math.min(100, ind.actual_pct)}%`, background: statusColor, zIndex: 2 }}></div>
+                                                                    </div>
+                                                                </td>
+                                                                <td style={{ padding: '0.75rem 1rem', color: dynVar < 0 ? '#ef4444' : '#10b981', fontWeight: 700 }}>{dynVar > 0 ? '+' : ''}{dynVar}%</td>
+                                                                <td style={{ padding: '0.75rem 1rem' }}>
+                                                                    <span style={{ display: 'inline-block', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 800, background: `${statusColor}22`, color: statusColor, textTransform: 'uppercase' }}>
+                                                                        {dynStatus}
+                                                                    </span>
+                                                                </td>
+                                                                <td style={{ padding: '0.75rem 1rem' }}>
+                                                                    <button 
+                                                                        onClick={() => {
+                                                                            const lastWeek = ind.progress_log?.length > 0 ? ind.progress_log[ind.progress_log.length - 1].week : 0;
+                                                                            setWeeklyItem({ resIdx, indIdx, res, ind, expectedPct });
+                                                                            setWeeklyForm({ week_number: lastWeek + 1, progress_pct: ind.actual_pct });
+                                                                            setShowWeeklyModal(true);
+                                                                        }}
+                                                                        style={{ background: '#3b82f6', color: '#fff', border: 'none', padding: '0.4rem 0.75rem', borderRadius: '4px', cursor: 'pointer', fontWeight: 600, fontSize: '0.7rem', whiteSpace: 'nowrap' }}
+                                                                    >
+                                                                        Weekly Report
+                                                                    </button>
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    });
+                                                }
+                                            })
+                                        )}
+                                    </tbody>
+                                </table>
+                                </div>
+                            </div>
+                            );
+                        })()}
+
                         {innerTab === 'WORKFORCE' && (
                             <div style={{ background: 'linear-gradient(135deg, #fdf4ff 0%, #ede9fe 100%)', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.02)' }}>
                             <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '1200px', color: '#0f172a' }}>
@@ -2050,14 +2265,222 @@ export default function ManagerDashboard() {
 
 
 
-      {/* Floating AI ChatBox (Elite Redesign) */}
+      {showTrackingModal && trackingItem && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(4px)' }}>
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            style={{ background: '#fff', borderRadius: '12px', width: '700px', maxWidth: '95%', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
+          >
+            {/* Header */}
+            <div style={{ padding: '0.8rem 1.2rem', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#3b82f6', boxShadow: '0 0 8px rgba(59,130,246,0.5)' }}></div>
+                    <h3 style={{ margin: 0, fontSize: '1rem', color: '#0f172a', fontWeight: 800 }}>Tracking Initialization: <span style={{ color: '#3b82f6' }}>{trackingItem.res['Resource Name']}</span></h3>
+                </div>
+                <div style={{ padding: '0.2rem 0.6rem', background: '#e0e7ff', color: '#4f46e5', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 800 }}>
+                    {trackingItem.res.Months || 0} MO DURATION
+                </div>
+            </div>
+
+            <div style={{ padding: '1rem 1.2rem', flex: 1, overflowY: 'auto' }}>
+                {/* Timeline Grid (Compact 3-column) */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem', marginBottom: '1rem', background: '#f1f5f9', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                    <div>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.65rem', fontWeight: 800, color: '#475569', marginBottom: '0.3rem', textTransform: 'uppercase' }}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> Start Date <span style={{color: '#ef4444'}}>*</span>
+                        </label>
+                        <input type="date" value={trackingForm.start_date} onChange={e => setTrackingForm({...trackingForm, start_date: e.target.value})} style={{ width: '100%', padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '0.75rem', color: '#0f172a', fontWeight: 700, background: '#fff', outline: 'none' }} />
+                    </div>
+                    <div>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.65rem', fontWeight: 800, color: '#94a3b8', marginBottom: '0.3rem', textTransform: 'uppercase' }}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg> Expected End (Auto)
+                        </label>
+                        <div style={{ width: '100%', padding: '0.4rem 0.6rem', background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: '4px', fontSize: '0.75rem', color: '#64748b', fontWeight: 700 }}>
+                            {trackingForm.start_date ? (() => { const d = new Date(trackingForm.start_date); d.setMonth(d.getMonth() + (trackingItem.res.Months || 0)); return d.toISOString().split('T')[0]; })() : 'Awaiting Start'}
+                        </div>
+                    </div>
+                    <div>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.65rem', fontWeight: 800, color: '#64748b', marginBottom: '0.3rem', textTransform: 'uppercase' }}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Actual End (Optional)
+                        </label>
+                        <input type="date" value={trackingForm.actual_end_date} onChange={e => setTrackingForm({...trackingForm, actual_end_date: e.target.value})} style={{ width: '100%', padding: '0.4rem 0.6rem', border: '1px solid #e2e8f0', borderRadius: '4px', fontSize: '0.75rem', color: '#475569', fontWeight: 600, background: '#fff', outline: 'none' }} />
+                    </div>
+                </div>
+
+                {/* Individual Assignment */}
+                <div style={{ marginBottom: '0.5rem', fontSize: '0.7rem', fontWeight: 800, color: '#0f172a', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <span style={{ display: 'flex', width: '16px', height: '16px', background: '#3b82f6', color: '#fff', borderRadius: '50%', alignItems: 'center', justifyContent: 'center', fontSize: '0.55rem' }}>{trackingForm.individuals?.length || 1}</span> 
+                    Personnel Assignment
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {trackingForm.individuals && trackingForm.individuals.map((ind, i) => (
+                        <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', background: '#fff', padding: '0.5rem 0', borderBottom: i === trackingForm.individuals.length - 1 ? 'none' : '1px dashed #e2e8f0' }}>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.6rem', fontWeight: 800, color: '#3b82f6', marginBottom: '0.2rem', textTransform: 'uppercase' }}>Ind {i + 1} Name <span style={{color: '#ef4444'}}>*</span></label>
+                                <input type="text" value={ind.name || ''} onChange={e => { const newInds = [...trackingForm.individuals]; newInds[i] = {...newInds[i], name: e.target.value}; setTrackingForm({...trackingForm, individuals: newInds}); }} placeholder="Enter name" style={{ width: '100%', padding: '0.4rem 0.6rem', border: '1px solid #93c5fd', borderRadius: '4px', fontSize: '0.75rem', color: '#0f172a', fontWeight: 700, background: '#eff6ff', outline: 'none' }} />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.6rem', fontWeight: 800, color: '#64748b', marginBottom: '0.2rem', textTransform: 'uppercase' }}>Corporate Email (Optional)</label>
+                                <input type="email" value={ind.email || ''} onChange={e => { const newInds = [...trackingForm.individuals]; newInds[i] = {...newInds[i], email: e.target.value}; setTrackingForm({...trackingForm, individuals: newInds}); }} placeholder="e.g. user@arche.global" style={{ width: '100%', padding: '0.4rem 0.6rem', border: '1px solid #e2e8f0', borderRadius: '4px', fontSize: '0.75rem', color: '#475569', fontWeight: 600, background: '#f8fafc', outline: 'none' }} />
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Footer */}
+            <div style={{ padding: '0.75rem 1.2rem', background: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+              <button onClick={() => setShowTrackingModal(false)} style={{ padding: '0.5rem 1rem', background: '#fff', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '6px', cursor: 'pointer', fontWeight: 700, fontSize: '0.75rem', transition: 'all 0.2s' }}>Cancel</button>
+              <button onClick={async () => {
+                if (!trackingForm.start_date) {
+                    setToast({ show: true, type: 'error', message: 'Start Date is mandatory.' });
+                    setTimeout(() => setToast({ show: false }), 3000);
+                    return;
+                }
+                const missingName = trackingForm.individuals?.some(ind => !ind.name || ind.name.trim() === '');
+                if (missingName) {
+                    setToast({ show: true, type: 'error', message: 'All Individual Names are mandatory.' });
+                    setTimeout(() => setToast({ show: false }), 3000);
+                    return;
+                }
+                try {
+                    const resp = await fetch(`${API}/manager/projects/${selectedProject.id}/resources/${trackingItem.idx}/start`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok()}` },
+                        body: JSON.stringify(trackingForm)
+                    });
+                    if (resp.ok) {
+                        setShowTrackingModal(false);
+                        loadProject(selectedProject.id);
+                        setToast({ show: true, type: 'success', message: 'Tracking initialized successfully.' });
+                        setTimeout(() => setToast({ show: false }), 3000);
+                    }
+                } catch (err) {}
+              }} style={{ padding: '0.7rem 1.5rem', background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 700, fontSize: '0.8rem', boxShadow: '0 4px 6px -1px rgba(59,130,246,0.3)', transition: 'all 0.2s' }}>Initialize Tracking</button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Weekly Report Modal */}
+      <AnimatePresence>
+        {showWeeklyModal && weeklyItem && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(4px)' }}>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} style={{ background: '#fff', borderRadius: '12px', width: '500px', maxWidth: '90vw', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
+              <div style={{ padding: '1.25rem 1.5rem', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>{weeklyItem.res['Resource Name']} - {weeklyItem.ind.name}</h3>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.2rem', fontWeight: 600 }}>WEEKLY REPORT & PROGRESS</div>
+                </div>
+                <button onClick={() => setShowWeeklyModal(false)} style={{ background: 'transparent', border: 'none', color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+              </div>
+              
+              <div style={{ padding: '1.5rem', overflowY: 'auto', maxHeight: '70vh' }}>
+                {/* Progress Update Form */}
+                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '1.25rem', marginBottom: '1.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                    <h4 style={{ margin: 0, fontSize: '0.85rem', color: '#0f172a', fontWeight: 800 }}>Update Progress</h4>
+                  </div>
+                  
+                  <div style={{ background: 'rgba(245, 158, 11, 0.1)', borderLeft: '3px solid #f59e0b', padding: '0.75rem', borderRadius: '4px', marginBottom: '1rem' }}>
+                    <p style={{ margin: 0, fontSize: '0.7rem', color: '#b45309', fontWeight: 600, lineHeight: '1.4' }}>
+                      <strong style={{ color: '#92400e' }}>WARNING:</strong> Please enter the <strong style={{ color: '#92400e' }}>exact cumulative progress (%)</strong> achieved by the end of this week. Progress cannot be decreased. Ensure accuracy, as variances directly trigger VP alerts.
+                    </p>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end' }}>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#64748b', marginBottom: '0.4rem' }}>WEEK NUMBER</label>
+                      <input type="number" value={weeklyForm.week_number} readOnly style={{ width: '100%', padding: '0.6rem 0.8rem', background: '#e2e8f0', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.8rem', color: '#475569', fontWeight: 600 }} />
+                    </div>
+                    <div style={{ flex: 2 }}>
+                      <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#64748b', marginBottom: '0.4rem' }}>CUMULATIVE PROGRESS %</label>
+                      <input type="number" step="0.1" value={isNaN(weeklyForm.progress_pct) ? '' : weeklyForm.progress_pct} onChange={e => setWeeklyForm({...weeklyForm, progress_pct: parseFloat(e.target.value)})} style={{ width: '100%', padding: '0.6rem 0.8rem', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.8rem', color: '#0f172a', fontWeight: 600, background: '#fff' }} />
+                    </div>
+                  </div>
+                  <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'flex-end' }}>
+                    <button onClick={async () => {
+                      if (weeklyForm.progress_pct < weeklyItem.ind.actual_pct) {
+                          setToast({ show: true, type: 'error', message: `Progress cannot be decreased. Current is ${weeklyItem.ind.actual_pct}%.` });
+                          setTimeout(() => setToast({ show: false }), 3000);
+                          return;
+                      }
+                      if (weeklyForm.progress_pct > 100) {
+                          setToast({ show: true, type: 'error', message: 'Cumulative progress cannot exceed 100%.' });
+                          setTimeout(() => setToast({ show: false }), 3000);
+                          return;
+                      }
+                      try {
+                        const resp = await fetch(`${API}/manager/projects/${selectedProject.id}/resources/${weeklyItem.resIdx}/individuals/${weeklyItem.indIdx}/progress`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok()}` },
+                          body: JSON.stringify(weeklyForm)
+                        });
+                        if (resp.ok) {
+                          setShowWeeklyModal(false);
+                          loadProject(selectedProject.id);
+                          setToast({ show: true, type: 'success', message: 'Progress saved successfully.' });
+                          setTimeout(() => setToast({ show: false }), 3000);
+                        } else {
+                          const errData = await resp.json();
+                          setToast({ show: true, type: 'error', message: errData.detail || 'Save failed due to an unknown error.' });
+                          setTimeout(() => setToast({ show: false }), 3000);
+                        }
+                      } catch (err) {
+                        setToast({ show: true, type: 'error', message: `Network Error: ${err.message}` });
+                        setTimeout(() => setToast({ show: false }), 3000);
+                      }
+                    }} style={{ padding: '0.6rem 1.2rem', background: '#10b981', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 700, fontSize: '0.75rem', boxShadow: '0 4px 6px -1px rgba(16,185,129,0.2)' }}>Save Progress</button>
+                  </div>
+                </div>
+
+                {/* History */}
+                <h4 style={{ margin: '0 0 1rem 0', fontSize: '0.85rem', color: '#0f172a', fontWeight: 800 }}>Weekly Log</h4>
+                {(!weeklyItem.ind.progress_log || weeklyItem.ind.progress_log.length === 0) ? (
+                  <div style={{ textAlign: 'center', color: '#94a3b8', fontSize: '0.8rem', padding: '1rem' }}>No progress logged yet.</div>
+                ) : (
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.75rem' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '2px solid #e2e8f0', color: '#64748b' }}>
+                        <th style={{ padding: '0.5rem', textAlign: 'left' }}>WEEK</th>
+                        <th style={{ padding: '0.5rem', textAlign: 'right' }}>ACTUAL %</th>
+                        <th style={{ padding: '0.5rem', textAlign: 'right' }}>TIMESTAMP</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {weeklyItem.ind.progress_log.map((log, i) => (
+                        <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                          <td style={{ padding: '0.5rem', fontWeight: 700, color: '#0f172a' }}>Week {log.week}</td>
+                          <td style={{ padding: '0.5rem', textAlign: 'right', fontWeight: 700, color: '#3b82f6' }}>{log.progress_pct}%</td>
+                          <td style={{ padding: '0.5rem', textAlign: 'right', color: '#94a3b8' }}>{new Date(log.timestamp).toLocaleDateString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* AI Chat Box Corner Float */}
       <AnimatePresence>
         {isChatOpen ? (
           <motion.div 
-            initial={{ opacity: 0, y: 50, scale: 0.9 }} 
-            animate={{ opacity: 1, y: 0, scale: 1 }} 
-            exit={{ opacity: 0, y: 50, scale: 0.9 }}
-            style={{ position: 'fixed', bottom: '2rem', right: '2rem', width: '320px', height: '480px', background: 'rgba(255, 255, 255, 0.98)', backdropFilter: 'blur(20px)', borderRadius: '16px', boxShadow: '0 20px 40px -12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 1000 }}
+            ref={chatRef}
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 50, scale: 0.9, transition: { duration: 0.2 } }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            style={{ 
+              position: 'fixed', bottom: '2rem', right: '2rem', zIndex: 1000,
+              width: '380px', background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 20px 40px -10px rgba(0,0,0,0.1), 0 0 20px rgba(59,130,246,0.1)', overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '480px'
+            }}
           >
             {/* Header */}
             <div style={{ padding: '0.8rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
@@ -2068,7 +2491,7 @@ export default function ManagerDashboard() {
                 </div>
                 <div>
                   <div style={{ fontSize: '0.75rem', fontWeight: 900, color: '#0f172a', letterSpacing: '0.05em' }}>DIGITRAC AI</div>
-                  <div style={{ fontSize: '0.55rem', color: '#3b82f6', fontWeight: 800, letterSpacing: '0.1em' }}>TACTICAL OVERVIEW</div>
+                  <div style={{ fontSize: '0.55rem', color: '#3b82f6', fontWeight: 800, letterSpacing: '0.1em' }}>PROJECT MONITORING</div>
                 </div>
               </div>
               <button onClick={() => setIsChatOpen(false)} style={{ background: 'transparent', border: 'none', color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
@@ -2140,6 +2563,24 @@ export default function ManagerDashboard() {
         )}
       </AnimatePresence>
 
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {toast.show && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            style={{ position: 'fixed', top: '2rem', left: '50%', transform: 'translateX(-50%)', background: toast.type === 'error' ? '#1e1b4b' : '#022c22', color: toast.type === 'error' ? '#fda4af' : '#6ee7b7', border: `1px solid ${toast.type === 'error' ? '#e11d48' : '#10b981'}`, padding: '0.8rem 1.5rem', borderRadius: '12px', zIndex: 9999, display: 'flex', alignItems: 'center', gap: '0.75rem', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.2)' }}
+          >
+            {toast.type === 'error' ? (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            ) : (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            )}
+            <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{toast.message}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

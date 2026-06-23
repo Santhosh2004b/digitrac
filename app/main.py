@@ -40,6 +40,11 @@ async def startup_event():
         # Launch background task
         asyncio.create_task(run_daily())
         print("Daily Background Deadline Monitor initialized.")
+        
+        # Launch resource utilization monitor
+        from app.utils.resource_scheduler import check_resource_utilization
+        asyncio.create_task(check_resource_utilization())
+        print("Resource Utilization Monitor initialized.")
     except Exception as e:
         print(f"Failed to initialize deadline monitor: {e}")
 

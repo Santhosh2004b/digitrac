@@ -82,3 +82,8 @@ app.include_router(ai.router)
 @app.get("/")
 def read_root():
     return {"message": f"Welcome to {settings.PROJECT_NAME} Backend API"}
+
+@app.get("/notifications/")
+def get_notifications():
+    """Mock endpoint to stop 404 errors"""
+    return []

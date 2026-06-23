@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from fastapi.responses import FileResponse
 import os
 from sqlalchemy import func
@@ -16,6 +16,7 @@ from app.schemas.user import UserResponse
 from app.utils.deps import get_current_manager
 
 from app.services.project_service import ProjectService
+from app.integrations.outlook.mail_service import MailService
 
 router = APIRouter(prefix="/manager", tags=["manager"])
 
@@ -37,6 +38,15 @@ class TrackingUpdateInput(BaseModel):
     actual_months: Optional[float] = None
     work_start_date: Optional[datetime] = None
     deadline: Optional[datetime] = None
+
+class ResourceTrackingInput(BaseModel):
+    start_date: str
+    actual_end_date: Optional[str] = None
+    individuals: Optional[list] = None
+
+class WeeklyProgressInput(BaseModel):
+    week_number: int
+    progress_pct: float
 
 from app.models.project import Project, ProjectResource, ApprovedProject, MissionAssignment
 
@@ -127,6 +137,10 @@ def get_my_projects(db: Session = Depends(get_db), current_manager: User = Depen
         actual_margin_pct = (actual_margin_amt / revenue * 100) if revenue > 0 else 0
         deviation = actual_margin_pct - target
 
+        impl_res = []
+        if isinstance(p.full_excel_data, dict):
+            impl_res = p.full_excel_data.get("implementation_resources", [])
+
         result.append({
             "id": p.id,
             "name": p.project_name,
@@ -136,6 +150,7 @@ def get_my_projects(db: Session = Depends(get_db), current_manager: User = Depen
             "total_items": len(items),
             "region": region,
             "resources": project_resources,
+            "implementation_resources": impl_res,
             "approved_by": p.approved_by,
             "artifact_path": artifact_path,
             "duration_months": duration,
@@ -461,10 +476,15 @@ def get_project_detail(
     actual_margin_pct = (actual_margin_amt / revenue * 100) if revenue > 0 else 0
     deviation = actual_margin_pct - target
 
+    impl_res = []
+    if isinstance(project.full_excel_data, dict):
+        impl_res = project.full_excel_data.get("implementation_resources", [])
+
     return {
         "id": project.id,
         "name": project.project_name,
         "resources": resource_data,
+        "implementation_resources": impl_res,
         "efficiency_pct": 100.0,
         "task_progress": 0,
         "status": "Good",
@@ -807,3 +827,245 @@ def delete_centralized_resource(
     db.commit()
     return {"status": "success", "message": "Resource deleted"}
 
+@router.post("/projects/{project_id}/resources/{resource_idx}/start")
+def start_resource_tracking(
+    project_id: int,
+    resource_idx: int,
+    data: ResourceTrackingInput,
+    db: Session = Depends(get_db),
+    current_manager: User = Depends(get_current_manager)
+):
+    if current_manager.role == "VP":
+        project = db.query(ApprovedProject).filter(ApprovedProject.id == project_id).first()
+    else:
+        project = db.query(ApprovedProject).filter(
+            ApprovedProject.id == project_id,
+            func.lower(ApprovedProject.assigned_manager_email) == current_manager.email.lower()
+        ).first()
+
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    from sqlalchemy.orm.attributes import flag_modified
+    if not isinstance(project.full_excel_data, dict):
+        raise HTTPException(status_code=400, detail="Implementation resources not supported on this project")
+
+    is_in_kpis = False
+    impl = project.full_excel_data.get("implementation_resources", [])
+    if not impl and "kpis" in project.full_excel_data and "implementation_resources" in project.full_excel_data["kpis"]:
+        impl = project.full_excel_data["kpis"]["implementation_resources"]
+        is_in_kpis = True
+
+    if resource_idx < 0 or resource_idx >= len(impl):
+        raise HTTPException(status_code=404, detail="Resource index out of bounds")
+
+    res = impl[resource_idx]
+    res["start_date"] = data.start_date
+    res["actual_end_date"] = data.actual_end_date
+    
+    if data.individuals:
+        res["individuals"] = []
+        for ind_data in data.individuals:
+            name = ind_data.get('name', '') if isinstance(ind_data, dict) else ind_data
+            email = ind_data.get('email', '') if isinstance(ind_data, dict) else ''
+            res["individuals"].append({
+                "name": name,
+                "email": email,
+                "progress_log": [],
+                "actual_pct": 0,
+                "variance": 0,
+                "status": "GREEN"
+            })
+    
+    planned_duration = float(res.get("Months", 0))
+    
+    if data.actual_end_date and data.start_date:
+        try:
+            s_date = datetime.strptime(data.start_date, "%Y-%m-%d")
+            e_date = datetime.strptime(data.actual_end_date, "%Y-%m-%d")
+            days = (e_date - s_date).days
+            actual_months = round(days / 30.0, 1) if days > 0 else 0.0
+            res["actual_duration"] = actual_months
+            if planned_duration > 0:
+                res["utilization"] = round((actual_months / planned_duration) * 100, 1)
+            else:
+                res["utilization"] = 100.0 if actual_months > 0 else 0.0
+        except ValueError:
+            pass
+
+    if is_in_kpis:
+        project.full_excel_data["kpis"]["implementation_resources"] = impl
+    else:
+        project.full_excel_data["implementation_resources"] = impl
+        
+    flag_modified(project, "full_excel_data")
+    db.commit()
+
+    return {"status": "success"}
+
+@router.post("/projects/{project_id}/resources/{resource_idx}/individuals/{ind_idx}/progress")
+def update_individual_progress(
+    project_id: int,
+    resource_idx: int,
+    ind_idx: int,
+    data: WeeklyProgressInput,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_manager: User = Depends(get_current_manager)
+):
+    if current_manager.role == "VP":
+        project = db.query(ApprovedProject).filter(ApprovedProject.id == project_id).first()
+    else:
+        project = db.query(ApprovedProject).filter(
+            ApprovedProject.id == project_id,
+            func.lower(ApprovedProject.assigned_manager_email) == current_manager.email.lower()
+        ).first()
+
+    if not project:
+        raise HTTPException(status_code=400, detail="Project not found")
+
+    from sqlalchemy.orm.attributes import flag_modified
+    is_in_kpis = False
+    impl = project.full_excel_data.get("implementation_resources", [])
+    if not impl and "kpis" in project.full_excel_data and "implementation_resources" in project.full_excel_data["kpis"]:
+        impl = project.full_excel_data["kpis"]["implementation_resources"]
+        is_in_kpis = True
+    
+    if resource_idx < 0 or resource_idx >= len(impl):
+        with open("debug_err.txt", "w") as f: f.write(f"Resource out of bounds. idx: {resource_idx}, len: {len(impl)}")
+        raise HTTPException(status_code=400, detail=f"Resource out of bounds. idx: {resource_idx}, len: {len(impl)}")
+        
+    res = impl[resource_idx]
+    if "individuals" not in res or ind_idx < 0 or ind_idx >= len(res.get("individuals", [])):
+        with open("debug_err.txt", "w") as f: f.write(f"Individual out of bounds. has_individuals: {'individuals' in res}, ind_idx: {ind_idx}, individuals_len: {len(res.get('individuals', []))}")
+        raise HTTPException(status_code=400, detail=f"Individual out of bounds. has_individuals: {'individuals' in res}, ind_idx: {ind_idx}")
+        
+    ind = res["individuals"][ind_idx]
+    
+    if data.progress_pct > 100:
+        raise HTTPException(status_code=400, detail="Cumulative progress cannot exceed 100%")
+
+    # Calculate Expected Progress
+    # Expected Progress = (Elapsed Duration in months / Planned Duration in months) * 100
+    planned_duration = float(res.get("Months", 1))
+    if planned_duration == 0: planned_duration = 1
+    
+    s_date = res.get("start_date")
+    elapsed_months = 0
+    if s_date:
+        try:
+            start_d = datetime.strptime(s_date, "%Y-%m-%d")
+            elapsed_days = (datetime.utcnow() - start_d).days
+            elapsed_months = elapsed_days / 30.0
+        except:
+            pass
+            
+    expected_pct = min(100.0, (elapsed_months / planned_duration) * 100)
+    
+    # Update individual
+    if "progress_log" not in ind:
+        ind["progress_log"] = []
+        
+    if len(ind["progress_log"]) > 0:
+        last_log = ind["progress_log"][-1]
+        if "timestamp" in last_log:
+            try:
+                last_time = datetime.fromisoformat(last_log["timestamp"])
+                days_since = (datetime.utcnow() - last_time).days
+                if days_since < 7:
+                    raise HTTPException(status_code=400, detail="A weekly report can only be submitted once every 7 days.")
+            except ValueError:
+                pass
+        
+    ind["progress_log"].append({
+        "week": data.week_number,
+        "progress_pct": data.progress_pct,
+        "timestamp": datetime.utcnow().isoformat()
+    })
+    
+    old_variance = ind.get("variance", 0)
+    
+    ind["actual_pct"] = data.progress_pct
+    variance = data.progress_pct - expected_pct
+    ind["variance"] = round(variance, 1)
+    
+    # Health Status
+    if data.progress_pct >= expected_pct:
+        ind["status"] = "GREEN"
+    elif data.progress_pct >= (expected_pct - 10):
+        ind["status"] = "ORANGE"
+    else:
+        ind["status"] = "RED"
+        
+    # Check if variance is within the specified alert ranges (absolute value)
+    new_variance = ind["variance"]
+    abs_var = abs(new_variance)
+    should_alert = False
+    if (20 <= abs_var <= 30) or (50 <= abs_var <= 60) or (80 <= abs_var <= 90):
+        should_alert = True
+                
+    if should_alert:
+        vps = db.query(User).filter(User.role == "VP").all()
+        vp_emails = [v.email for v in vps if v.email]
+        if current_manager.email not in vp_emails:
+            vp_emails.append(current_manager.email)
+            
+        if vp_emails:
+            background_tasks.add_task(
+                MailService.send_variance_alert_mail,
+                mission_name=project.project_name,
+                resource_name=res.get("Resource Name", "Unknown Resource"),
+                variance_pct=new_variance,
+                actual_pct=data.progress_pct,
+                expected_pct=round(expected_pct, 1),
+                health_status=ind["status"],
+                recipient_emails=vp_emails,
+                planned_months=round(planned_duration, 1),
+                elapsed_months=round(elapsed_months, 1)
+            )
+
+    # Re-calculate overall resource utilization for the category as average of individuals
+    total_act = sum(i.get("actual_pct", 0) for i in res["individuals"])
+    res["utilization"] = round(total_act / len(res["individuals"]), 1)
+
+    if is_in_kpis:
+        project.full_excel_data["kpis"]["implementation_resources"] = impl
+    else:
+        project.full_excel_data["implementation_resources"] = impl
+        if "kpis" not in project.full_excel_data:
+            project.full_excel_data["kpis"] = {}
+
+    # Calculate overall project progress
+    all_actuals = []
+    all_statuses = []
+    for resource in impl:
+        if "individuals" in resource:
+            for person in resource["individuals"]:
+                all_actuals.append(person.get("actual_pct", 0))
+                all_statuses.append(person.get("status", "GREEN"))
+    
+    if all_actuals:
+        overall_progress = round(sum(all_actuals) / len(all_actuals), 1)
+        project.full_excel_data["kpis"]["progress_pct"] = overall_progress
+
+    # Calculate overall project health
+    overall_health = "ASSIGNED"
+    if all_statuses:
+        if "RED" in all_statuses:
+            overall_health = "RED"
+        elif "ORANGE" in all_statuses:
+            overall_health = "ORANGE"
+        else:
+            overall_health = "GREEN"
+            
+    project.full_excel_data["kpis"]["health"] = overall_health
+
+    flag_modified(project, "full_excel_data")
+    db.commit()
+
+    return {"status": "success"}
+
+@router.get("/pending-actions")
+def get_pending_actions(db: Session = Depends(get_db), current_manager: User = Depends(get_current_manager)):
+    """Mock endpoint to stop 404 errors"""
+    return []

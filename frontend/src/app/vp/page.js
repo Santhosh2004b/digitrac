@@ -24,18 +24,19 @@ const Icons = {
 };
 
 const TypewriterText = ({ text, delay = 15 }) => {
+  const safeText = typeof text === 'string' ? text : JSON.stringify(text) || '';
   const [displayedText, setDisplayedText] = useState("");
   
   useEffect(() => {
     setDisplayedText("");
     let i = 0;
     const interval = setInterval(() => {
-      setDisplayedText(text.slice(0, i + 1));
+      setDisplayedText(safeText.slice(0, i + 1));
       i++;
-      if (i >= text.length) clearInterval(interval);
+      if (i >= safeText.length) clearInterval(interval);
     }, delay);
     return () => clearInterval(interval);
-  }, [text, delay]);
+  }, [safeText, delay]);
 
   return <>{displayedText}</>;
 };
@@ -70,22 +71,35 @@ export default function CoordinatorDashboard() {
   const [portfolio, setPortfolio] = useState([]);
   const [portfolioFilter, setPortfolioFilter] = useState('ALL');
   const [portfolioPage, setPortfolioPage] = useState(1);
+  const [selectedVpProject, setSelectedVpProject] = useState(null);
 
   const [requests, setRequests] = useState([]);
   const [escalations, setEscalations] = useState([]);
+  const [resourceUtilModalProject, setResourceUtilModalProject] = useState(null);
   
   
   const [feed, setFeed] = useState([]);
   const [feedFilter, setFeedFilter] = useState('');
   
-  const [isChatOpen, setIsChatOpen] = useState(true);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState([
-    { role: 'ai', content: 'Hello Commander! I am your strategic AI assistant. Select a question below to analyze the portfolio:' }
+    { role: 'ai', content: 'Hello! I am your AI assistant. Select a question below to analyze the portfolio:' }
   ]);
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [chatInput, setChatInput] = useState('');
   
   const messagesEndRef = useRef(null);
+  const chatRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (chatRef.current && !chatRef.current.contains(event.target)) {
+        setIsChatOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -112,7 +126,10 @@ export default function CoordinatorDashboard() {
         body: JSON.stringify({ question })
       });
       const data = await res.json();
-      setChatMessages(prev => [...prev, { role: 'ai', content: data.answer || data.detail || 'Error connecting to intelligence feed.' }]);
+      const content = typeof data.answer === 'string' ? data.answer
+        : typeof data.detail === 'string' ? data.detail
+        : 'Error connecting to intelligence feed.';
+      setChatMessages(prev => [...prev, { role: 'ai', content }]);
     } catch (e) {
       setChatMessages(prev => [...prev, { role: 'ai', content: 'Connection to AI framework failed.' }]);
     } finally {
@@ -192,7 +209,8 @@ export default function CoordinatorDashboard() {
         setManagerValidated(true);
         setManagerName(managerEmail.split('@')[0].toUpperCase());
       } else {
-        showToast("Invalid PM Email. Must be @arche.global", "error");
+        const errorData = await res.json();
+        showToast(errorData.detail || "Invalid PM Email. Must be @arche.global", "error");
       }
     } catch (e) {
       showToast("Error validating manager", "error");
@@ -227,7 +245,8 @@ export default function CoordinatorDashboard() {
               project_name: data.summary.project_name || "Unknown Project",
               summary: data.summary,
               project_costing: data.project_costing,
-              workforce_budget: data.workforce_budget
+              workforce_budget: data.workforce_budget,
+              implementation_resources: data.implementation_resources
             })
           });
           if (previewRes.ok) {
@@ -240,7 +259,11 @@ export default function CoordinatorDashboard() {
         setStep3Page(1);
       } else {
         const err = await res.json();
-        showToast(err.detail || "Failed to parse Excel", "error");
+        const detail = err.detail;
+        const msg = typeof detail === 'string' ? detail
+          : typeof detail?.message === 'string' ? `${detail.message} Missing: ${(detail.missing || []).join(', ')}`
+          : 'Failed to parse Excel file.';
+        showToast(msg, "error");
       }
     } catch (error) {
       showToast("Upload error", "error");
@@ -260,8 +283,8 @@ export default function CoordinatorDashboard() {
           manager_email: managerEmail,
           project_name: parsedData.summary.project_name || "Unknown Project",
           summary: parsedData.summary,
-          project_costing: parsedData.project_costing,
-          workforce_budget: parsedData.workforce_budget
+          items: parsedData.items || [],
+          implementation_resources: parsedData.implementation_resources || []
         })
       });
       if (res.ok) {
@@ -284,8 +307,7 @@ export default function CoordinatorDashboard() {
   };
 
   const navItems = [
-    { id: 'OVERVIEW', label: 'PORTFOLIO OVERVIEW', sub: 'ALL PROJECTS', icon: <Icons.Overview /> },
-    { id: 'APPROVALS', label: 'GOVERNANCE', sub: 'APPROVALS & ALERTS', icon: <Icons.Folder /> }
+    { id: 'OVERVIEW', label: 'PORTFOLIO OVERVIEW', sub: 'ALL PROJECTS', icon: <Icons.Overview /> }
   ];
 
   return (
@@ -491,8 +513,8 @@ export default function CoordinatorDashboard() {
                           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
                         </div>
                         <div>
-                          <h2 style={{ fontSize: '1.5rem', fontWeight: 900, margin: 0, letterSpacing: '-0.02em', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>Identify Commander</h2>
-                          <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: 0, marginTop: '0.2rem' }}>Authenticate PM identity to initiate protocol.</p>
+                          <h2 style={{ fontSize: '1.5rem', fontWeight: 900, margin: 0, letterSpacing: '-0.02em', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>Select Project Manager</h2>
+                          <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: 0, marginTop: '0.2rem' }}>Enter the PM's email address to get started.</p>
                         </div>
                       </div>
                       
@@ -513,7 +535,7 @@ export default function CoordinatorDashboard() {
                           onClick={validateManager} 
                           style={{ background: managerValidated ? '#10b981' : '#f8fafc', color: managerValidated ? '#fff' : '#0f172a', border: 'none', padding: '0.8rem 1.5rem', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.3s', boxShadow: managerValidated ? '0 4px 10px rgba(16,185,129,0.3)' : '0 4px 6px rgba(0,0,0,0.1)' }}
                         >
-                          {managerValidated ? 'VERIFIED' : 'AUTHENTICATE'}
+                          {managerValidated ? 'VERIFIED' : 'VERIFY'}
                         </motion.button>
                       </div>
 
@@ -528,7 +550,7 @@ export default function CoordinatorDashboard() {
                               {managerName.charAt(0).toUpperCase()}
                             </div>
                             <div style={{ flex: 1 }}>
-                              <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#34d399', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.2rem' }}>Clearance Granted</div>
+                              <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#34d399', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.2rem' }}>Manager Verified</div>
                               <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#fff' }}>{managerName}</div>
                               <div style={{ fontSize: '0.8rem', color: '#a7f3d0', marginTop: '0.1rem' }}>Active Project Manager</div>
                             </div>
@@ -562,7 +584,7 @@ export default function CoordinatorDashboard() {
                           transition: 'all 0.3s'
                         }}
                       >
-                        PROCEED TO UPLOAD 
+                        Continue to Upload 
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                       </motion.button>
                     </div>
@@ -576,7 +598,7 @@ export default function CoordinatorDashboard() {
                     <div style={{ position: 'relative' }}>
                       <input 
                         type="file" 
-                        accept=".xlsx, .xls"
+                        accept=".xlsx, .xls, .csv"
                         onChange={handleFileUpload}
                         style={{ position: 'absolute', width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }}
                       />
@@ -714,7 +736,9 @@ export default function CoordinatorDashboard() {
 
         {activeTab === 'OVERVIEW' && (() => {
           const validPortfolio = Array.isArray(portfolio) ? portfolio : [];
-          const filteredPortfolio = validPortfolio.filter(p => portfolioFilter === 'ALL' || p.status === portfolioFilter);
+          // Sort newest assigned first
+          const sortedPortfolio = [...validPortfolio].sort((a, b) => new Date(b.assigned_at || 0) - new Date(a.assigned_at || 0));
+          const filteredPortfolio = sortedPortfolio.filter(p => portfolioFilter === 'ALL' || p.status === portfolioFilter);
           
           const ITEMS_PER_PAGE = 10;
           const totalPages = Math.max(1, Math.ceil(filteredPortfolio.length / ITEMS_PER_PAGE));
@@ -820,7 +844,12 @@ export default function CoordinatorDashboard() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
                     {paginatedPortfolio.map((p, i) => (
-                      <div key={i} style={{ borderBottom: i === paginatedPortfolio.length - 1 ? 'none' : '1px solid #f1f5f9', padding: '0.2rem 0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#fff' }}>
+                      <div key={i}
+                        onClick={() => { setSelectedVpProject(p); setResourceUtilModalProject(p); }}
+                        style={{ borderBottom: i === paginatedPortfolio.length - 1 ? 'none' : '1px solid #f1f5f9', padding: '0.2rem 0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: selectedVpProject?.id === p.id ? '#eff6ff' : '#fff', cursor: 'pointer', transition: 'background 0.15s' }}
+                        onMouseOver={e => e.currentTarget.style.background = '#f8fafc'}
+                        onMouseOut={e => e.currentTarget.style.background = selectedVpProject?.id === p.id ? '#eff6ff' : '#fff'}
+                      >
                          {/* Status Indicator */}
                          <div style={{ width: '3px', height: '16px', borderRadius: '1.5px', background: p.status === 'Red' ? '#ef4444' : p.status === 'Orange' ? '#f59e0b' : '#10b981', flexShrink: 0 }}></div>
                          
@@ -840,28 +869,99 @@ export default function CoordinatorDashboard() {
                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{(p.manager_name || '').split('@')[0]}</span>
                          </div>
 
-                         {/* Margins */}
-                         <div style={{ flex: '1.5', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                           <div>
-                             <div style={{ fontSize: '0.45rem', fontWeight: 800, color: '#94a3b8', letterSpacing: '0.05em' }}>TARGET</div>
-                             <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#0f172a' }}>{p.kpis?.target_margin_pct || 0}%</div>
-                           </div>
-                           <div>
-                             <div style={{ fontSize: '0.45rem', fontWeight: 800, color: p.status === 'Red' ? '#dc2626' : p.status === 'Orange' ? '#d97706' : '#059669', letterSpacing: '0.05em' }}>FORECAST</div>
-                             <div style={{ fontSize: '0.7rem', fontWeight: 900, color: p.status === 'Red' ? '#ef4444' : p.status === 'Orange' ? '#f59e0b' : '#10b981' }}>{p.kpis?.forecast_margin_pct || 0}%</div>
-                           </div>
+                         {/* Timeline */}
+                         <div style={{ flex: '1.5', minWidth: '90px', display: 'flex', flexDirection: 'column', gap: '0.1rem' }}>
+                           <div style={{ fontSize: '0.45rem', fontWeight: 800, color: '#94a3b8', letterSpacing: '0.05em' }}>TIMELINE</div>
+                           {(() => {
+                             if (!p.assigned_at) return <div style={{ fontSize: '0.65rem', color: '#64748b' }}>N/A</div>;
+                             const start = new Date(p.assigned_at);
+                             const end = new Date(start);
+                             end.setMonth(end.getMonth() + (parseFloat(p.duration) || 0));
+                             const remainingDays = Math.max(0, Math.ceil((end - new Date()) / (1000 * 60 * 60 * 24)));
+                             return (
+                               <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                 <div style={{ fontSize: '0.65rem', fontWeight: 700, color: remainingDays <= 30 ? '#ef4444' : '#0f172a' }}>
+                                   {remainingDays} Days Left
+                                 </div>
+                                 <div style={{ fontSize: '0.55rem', color: '#64748b' }}>{end.toLocaleDateString()}</div>
+                               </div>
+                             );
+                           })()}
                          </div>
 
-                         {/* Progress */}
-                         <div style={{ flex: '1', minWidth: '80px', display: 'flex', flexDirection: 'column', gap: '0.1rem' }}>
-                           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.5rem', fontWeight: 700 }}>
-                             <span style={{ color: '#64748b' }}>Progress</span>
-                             <span style={{ color: '#2563eb' }}>{p.kpis?.progress_pct || 0}%</span>
-                           </div>
-                           <div style={{ width: '100%', height: '3px', background: '#e2e8f0', borderRadius: '1.5px', overflow: 'hidden' }}>
-                             <div style={{ width: `${Math.min(100, p.kpis?.progress_pct || 0)}%`, background: '#2563eb', height: '100%', borderRadius: '1.5px' }}></div>
-                           </div>
-                         </div>
+                         {/* Margins / Progress */}
+                         {(() => {
+                           const implRes = p.implementation_resources || p.kpis?.implementation_resources || [];
+                           let totalExpected = 0;
+                           let totalActual = 0;
+                           let totalIndividuals = 0;
+                           
+                           implRes.forEach(r => {
+                               const sd = r.start_date ? new Date(r.start_date) : null;
+                               let expectedPct = 0;
+                               if (sd && r.Months > 0) {
+                                   const elapsedDays = (new Date() - sd) / (1000 * 60 * 60 * 24);
+                                   expectedPct = Math.min(100, (elapsedDays / 30.0 / r.Months) * 100);
+                               }
+                               if (r.individuals && r.individuals.length > 0) {
+                                   r.individuals.forEach(ind => {
+                                       totalExpected += expectedPct;
+                                       totalActual += ind.actual_pct || 0;
+                                       totalIndividuals++;
+                                   });
+                               }
+                           });
+                           
+                           const avgExpected = totalIndividuals > 0 ? parseFloat((totalExpected / totalIndividuals).toFixed(1)) : 0;
+                           const avgActual = totalIndividuals > 0 ? parseFloat((totalActual / totalIndividuals).toFixed(1)) : 0;
+                           const variance = parseFloat((avgActual - avgExpected).toFixed(1));
+                           const isProfit = variance >= 0;
+
+                           return (
+                             <div style={{ flex: '1.5', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                               <div>
+                                 <div style={{ fontSize: '0.45rem', fontWeight: 800, color: '#94a3b8', letterSpacing: '0.05em' }}>TARGET</div>
+                                 <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#0f172a' }}>{avgExpected}%</div>
+                               </div>
+                               <div>
+                                 <div style={{ fontSize: '0.45rem', fontWeight: 800, color: '#94a3b8', letterSpacing: '0.05em' }}>ACTUAL</div>
+                                 <div style={{ fontSize: '0.7rem', fontWeight: 900, color: '#0f172a' }}>{avgActual}%</div>
+                               </div>
+                               <div>
+                                 <div style={{ fontSize: '0.45rem', fontWeight: 800, color: isProfit ? '#059669' : '#dc2626', letterSpacing: '0.05em' }}>VARIANCE</div>
+                                 <div style={{ fontSize: '0.7rem', fontWeight: 900, color: isProfit ? '#10b981' : '#ef4444' }}>{variance > 0 ? '+' : ''}{variance}%</div>
+                               </div>
+                             </div>
+                           );
+                         })()}
+
+                         {/* Resource Utilization */}
+                         {/* Resource Utilization */}
+                         {(() => {
+                           const implRes = p.implementation_resources || p.kpis?.implementation_resources || [];
+                           let avgUtil = 0;
+                           if (implRes.length > 0) {
+                             const total = implRes.reduce((sum, r) => sum + (r.utilization || 0), 0);
+                             avgUtil = Math.round(total / implRes.length);
+                           }
+                           return (
+                             <div 
+                               onClick={(e) => { e.stopPropagation(); setResourceUtilModalProject(p); }}
+                               style={{ flex: '1.2', minWidth: '90px', display: 'flex', flexDirection: 'column', gap: '0.1rem', cursor: 'pointer', padding: '0.2rem', borderRadius: '4px', border: '1px dashed transparent' }}
+                               onMouseOver={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
+                               onMouseOut={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'transparent'; }}
+                               title="Click to view Resource Utilization Breakdown"
+                             >
+                               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.5rem', fontWeight: 800 }}>
+                                 <span style={{ color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Resource Util</span>
+                                 <span style={{ color: avgUtil > 100 ? '#ef4444' : avgUtil > 80 ? '#f59e0b' : '#10b981' }}>{avgUtil}%</span>
+                               </div>
+                               <div style={{ width: '100%', height: '4px', background: '#e2e8f0', borderRadius: '2px', overflow: 'hidden' }}>
+                                 <div style={{ width: `${Math.min(100, avgUtil)}%`, background: avgUtil > 100 ? '#ef4444' : avgUtil > 80 ? '#f59e0b' : '#10b981', height: '100%', borderRadius: '2px' }}></div>
+                               </div>
+                             </div>
+                           );
+                         })()}
                       </div>
                     ))}
                   </div>
@@ -901,7 +1001,131 @@ export default function CoordinatorDashboard() {
           );
         })()}
       
+        {activeTab === 'OVERVIEW' && selectedVpProject && (() => {
+          const sp = selectedVpProject;
+          const implRes = sp.implementation_resources || sp.kpis?.implementation_resources || [];
+          const costing = sp.project_costing || [];
+          return (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              style={{ marginTop: '1rem', padding: '0 1rem' }}
+            >
+              {/* Header */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: sp.status === 'Red' ? '#ef4444' : sp.status === 'Orange' ? '#f59e0b' : '#10b981', boxShadow: `0 0 8px ${sp.status === 'Red' ? '#ef4444' : sp.status === 'Orange' ? '#f59e0b' : '#10b981'}` }}></div>
+                  <div>
+                    <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#0f172a' }}>{sp.name}</h2>
+                    <div style={{ fontSize: '0.7rem', color: '#64748b' }}>{sp.customer_name} · PM: {sp.manager_name}</div>
+                  </div>
+                </div>
+                <button onClick={() => setSelectedVpProject(null)} style={{ background: '#e2e8f0', border: 'none', padding: '0.4rem 0.9rem', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, fontSize: '0.75rem', color: '#475569' }}>✕ Close</button>
+              </div>
+
+              {/* KPI Ribbon */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: '0.75rem', marginBottom: '1rem' }}>
+                {[
+                  { label: 'PROJECT HEALTH', value: sp.status, color: sp.status === 'Red' ? '#ef4444' : sp.status === 'Orange' ? '#f59e0b' : '#10b981' },
+                  { label: 'TARGET MARGIN', value: `${sp.kpis?.target_margin_pct?.toFixed(1) || 0}%`, color: '#2563eb' },
+                  { label: 'FORECAST MARGIN', value: `${sp.kpis?.forecast_margin_pct?.toFixed(1) || 0}%`, color: sp.status === 'Red' ? '#ef4444' : '#10b981' },
+                  { label: 'TOTAL SELL PRICE', value: `₹${(sp.kpis?.total_revenue || 0).toLocaleString('en-IN')}`, color: '#0f172a' },
+                  { label: 'DURATION', value: `${sp.duration || 0} Months`, color: '#0f172a' },
+                ].map(k => (
+                  <div key={k.label} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '0.75rem 1rem', boxShadow: '0 2px 4px rgba(0,0,0,0.03)' }}>
+                    <div style={{ fontSize: '0.55rem', fontWeight: 800, color: '#94a3b8', letterSpacing: '0.05em', marginBottom: '0.3rem' }}>{k.label}</div>
+                    <div style={{ fontSize: '0.95rem', fontWeight: 800, color: k.color }}>{k.value}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Implementation Resources */}
+              {implRes.length > 0 && (
+                <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', marginBottom: '1rem', overflow: 'hidden' }}>
+                  <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#0f172a' }}>📋 Implementation Resources</span>
+                    <span style={{ fontSize: '0.65rem', color: '#64748b' }}>{implRes.filter(r => r.start_date).length}/{implRes.length} Tracking</span>
+                  </div>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.75rem' }}>
+                    <thead>
+                      <tr style={{ background: '#f8fafc' }}>
+                        {['Resource Name','Qty','Planned Duration','Actual Duration','Start Date','Expected End Date','Actual End Date','Util %','Status'].map(h => (
+                          <th key={h} style={{ padding: '0.5rem 0.75rem', color: '#475569', fontWeight: 700, fontSize: '0.65rem', textTransform: 'uppercase' }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {implRes.map((r, idx) => {
+                        const sd = r.start_date ? new Date(r.start_date) : null;
+                        let expectedEndDateStr = '—';
+                        if (sd && r.Months > 0) { const e = new Date(sd); e.setMonth(e.getMonth() + r.Months); expectedEndDateStr = e.toISOString().split('T')[0]; }
+                        const util = r.utilization || 0;
+                        const status = !sd ? 'Pending' : (util > 100 ? 'Red' : util > 80 ? 'Orange' : 'Green');
+                        const sc = status === 'Red' ? '#ef4444' : status === 'Orange' ? '#f59e0b' : status === 'Green' ? '#10b981' : '#94a3b8';
+                        return (
+                          <tr key={idx} style={{ borderTop: '1px solid #f1f5f9' }}>
+                            <td style={{ padding: '0.5rem 0.75rem', fontWeight: 600, color: '#0f172a' }}>{r['Resource Name']}</td>
+                            <td style={{ padding: '0.5rem 0.75rem', color: '#475569' }}>{r.Qty || 0}</td>
+                            <td style={{ padding: '0.5rem 0.75rem', color: '#475569' }}>{r.Months || 0} Mo</td>
+                            <td style={{ padding: '0.5rem 0.75rem', color: '#475569' }}>{r.actual_duration !== undefined ? r.actual_duration + ' Mo' : '—'}</td>
+                            <td style={{ padding: '0.5rem 0.75rem', color: sd ? '#059669' : '#94a3b8' }}>{sd ? sd.toISOString().split('T')[0] : 'Not Started'}</td>
+                            <td style={{ padding: '0.5rem 0.75rem', color: '#475569' }}>{expectedEndDateStr}</td>
+                            <td style={{ padding: '0.5rem 0.75rem', color: '#475569' }}>{r.actual_end_date || '—'}</td>
+                            <td style={{ padding: '0.5rem 0.75rem' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <div style={{ flex: 1, height: '4px', background: '#e2e8f0', borderRadius: '2px', overflow: 'hidden' }}>
+                                  <div style={{ width: `${Math.min(util, 100)}%`, height: '100%', background: sc }}></div>
+                                </div>
+                                <span style={{ fontSize: '0.7rem', color: sc, fontWeight: 700 }}>{util}%</span>
+                              </div>
+                            </td>
+                            <td style={{ padding: '0.5rem 0.75rem' }}><span style={{ padding: '0.15rem 0.5rem', borderRadius: '4px', fontSize: '0.6rem', fontWeight: 800, background: `${sc}22`, color: sc, textTransform: 'uppercase' }}>{status}</span></td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* Project Costing */}
+              {costing.length > 0 && (
+                <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
+                  <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#0f172a' }}>💰 Project Costing ({costing.length} items)</span>
+                  </div>
+                  <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.72rem' }}>
+                    <thead>
+                      <tr style={{ background: '#f8fafc' }}>
+                        {['Description','Qty','Unit Price (INR)','Total Price (INR)','Unit Cost','Total Cost'].map(h => (
+                          <th key={h} style={{ padding: '0.5rem 0.75rem', color: '#475569', fontWeight: 700, fontSize: '0.62rem', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {costing.slice(0,15).map((row, idx) => (
+                        <tr key={idx} style={{ borderTop: '1px solid #f1f5f9' }}>
+                          <td style={{ padding: '0.4rem 0.75rem', color: '#0f172a', maxWidth: '220px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={row.Description}>{row.Description}</td>
+                          <td style={{ padding: '0.4rem 0.75rem', color: '#475569' }}>{row.Qty || 0}</td>
+                          <td style={{ padding: '0.4rem 0.75rem', color: '#2563eb', fontWeight: 700 }}>₹{(row['Unit Price (INR)'] || 0).toLocaleString()}</td>
+                          <td style={{ padding: '0.4rem 0.75rem', color: '#059669', fontWeight: 700 }}>₹{(row['Total Price (INR)'] || 0).toLocaleString()}</td>
+                          <td style={{ padding: '0.4rem 0.75rem', color: '#475569' }}>₹{(row['Unit Cost'] || 0).toLocaleString()}</td>
+                          <td style={{ padding: '0.4rem 0.75rem', color: '#ef4444' }}>₹{(row['Total Cost'] || 0).toLocaleString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          );
+        })()}
+
         {activeTab === 'APPROVALS' && (
+
           <motion.div 
             initial={{ opacity: 0, y: 10 }} 
             animate={{ opacity: 1, y: 0 }} 
@@ -922,7 +1146,7 @@ export default function CoordinatorDashboard() {
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                 <h1 style={{ fontSize: '1.25rem', fontWeight: 900, margin: 0, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Icons.Folder /> Governance Command
+                  <Icons.Folder /> Portfolio Overview
                 </h1>
                 <div style={{ height: '20px', width: '1px', background: 'rgba(255,255,255,0.2)' }}></div>
                 <p style={{ fontSize: '0.75rem', color: '#94a3b8', margin: 0, fontWeight: 500 }}>
@@ -1100,7 +1324,7 @@ export default function CoordinatorDashboard() {
                                         )}
                                       </div>
                                       <div style={{ fontSize: '0.7rem', color: '#64748b', fontStyle: 'italic', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                                        "{r.reason}"
+                                        "{typeof r.reason === 'string' ? r.reason : JSON.stringify(r.reason)}"
                                       </div>
                                   </td>
                                   <td style={{ padding: '0.4rem 0.75rem' }}>
@@ -1216,6 +1440,7 @@ export default function CoordinatorDashboard() {
       <AnimatePresence>
         {isChatOpen ? (
           <motion.div 
+            ref={chatRef}
             initial={{ opacity: 0, y: 50, scale: 0.9 }} 
             animate={{ opacity: 1, y: 0, scale: 1 }} 
             exit={{ opacity: 0, y: 50, scale: 0.9 }}
@@ -1345,6 +1570,174 @@ export default function CoordinatorDashboard() {
           {toast.message}
         </motion.div>
       )}
+      {/* Resource Utilization Modal */}
+      <AnimatePresence>
+        {resourceUtilModalProject && (() => {
+          const p = resourceUtilModalProject;
+          const implRes = p.implementation_resources || p.kpis?.implementation_resources || [];
+          return (
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(4px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                style={{ background: '#fff', borderRadius: '12px', width: '100%', maxWidth: '1000px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}
+              >
+                <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', borderTopLeftRadius: '12px', borderTopRightRadius: '12px' }}>
+                  <div>
+                    <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>{p.name}</h2>
+                    <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.2rem', fontWeight: 600 }}>RESOURCE UTILIZATION BREAKDOWN</div>
+                  </div>
+                  <button onClick={() => setResourceUtilModalProject(null)} style={{ background: '#e2e8f0', color: '#475569', border: 'none', padding: '0.4rem', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                  </button>
+                </div>
+                
+                {(() => {
+                  let totalExpected = 0;
+                  let totalActual = 0;
+                  let totalIndividuals = 0;
+
+                  implRes.forEach(r => {
+                      const sd = r.start_date ? new Date(r.start_date) : null;
+                      let expectedPct = 0;
+                      if (sd && r.Months > 0) {
+                          const elapsedDays = (new Date() - sd) / (1000 * 60 * 60 * 24);
+                          expectedPct = Math.min(100, (elapsedDays / 30.0 / r.Months) * 100);
+                      }
+                      if (r.individuals) {
+                          r.individuals.forEach(ind => {
+                              totalExpected += expectedPct;
+                              totalActual += ind.actual_pct || 0;
+                              totalIndividuals++;
+                          });
+                      }
+                  });
+
+                  let avgExpected = totalIndividuals > 0 ? parseFloat((totalExpected / totalIndividuals).toFixed(1)) : 0;
+                  let avgActual = totalIndividuals > 0 ? parseFloat((totalActual / totalIndividuals).toFixed(1)) : 0;
+                  let variance = parseFloat((avgActual - avgExpected).toFixed(1));
+                  let isProfit = variance >= 0;
+                  let statusText = isProfit ? "a net positive (profit/ahead of schedule)" : "a net negative (loss/behind schedule)";
+                  
+                  return totalIndividuals > 0 ? (
+                    <div style={{ padding: '1rem 1.5rem', background: isProfit ? 'rgba(16, 185, 129, 0.05)' : 'rgba(239, 68, 68, 0.05)', borderBottom: `1px solid ${isProfit ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}` }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ fontSize: '0.85rem', color: '#334155', lineHeight: '1.5', flex: 1 }}>
+                          The project has reached <strong>{avgActual}%</strong> completion based on an expected timeline of <strong>{avgExpected}%</strong>. 
+                          Overall, the average variance is <strong style={{ color: isProfit ? '#10b981' : '#ef4444' }}>{variance > 0 ? '+' : ''}{variance}%</strong>, which indicates this project is currently <strong>{statusText}</strong>.
+                        </div>
+                        <div style={{ display: 'flex', gap: '1.5rem', marginLeft: '1rem', background: '#fff', padding: '0.75rem 1rem', borderRadius: '8px', border: `1px solid ${isProfit ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`, boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                          <div style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: '0.55rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Avg Expected</div>
+                            <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#475569' }}>{avgExpected}%</div>
+                          </div>
+                          <div style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: '0.55rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Avg Actual</div>
+                            <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>{avgActual}%</div>
+                          </div>
+                          <div style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: '0.55rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Avg Variance</div>
+                            <div style={{ fontSize: '1.1rem', fontWeight: 800, color: isProfit ? '#10b981' : '#ef4444' }}>{variance > 0 ? '+' : ''}{variance}%</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null;
+                })()}
+
+                <div style={{ padding: '1.5rem', overflowY: 'auto' }}>
+                  {implRes.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b', fontSize: '0.85rem' }}>No implementation resources assigned.</div>
+                  ) : (
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '2px solid #e2e8f0' }}>
+                          <th style={{ padding: '0.5rem', textAlign: 'left', color: '#475569', fontWeight: 800, fontSize: '0.7rem', textTransform: 'uppercase' }}>Resource Name</th>
+                          <th style={{ padding: '0.5rem', textAlign: 'left', color: '#475569', fontWeight: 800, fontSize: '0.7rem', textTransform: 'uppercase' }}>Person Name</th>
+                          <th style={{ padding: '0.5rem', textAlign: 'center', color: '#475569', fontWeight: 800, fontSize: '0.7rem', textTransform: 'uppercase' }}>Planned</th>
+                          <th style={{ padding: '0.5rem', textAlign: 'center', color: '#475569', fontWeight: 800, fontSize: '0.7rem', textTransform: 'uppercase' }}>Expected %</th>
+                          <th style={{ padding: '0.5rem', textAlign: 'center', color: '#475569', fontWeight: 800, fontSize: '0.7rem', textTransform: 'uppercase' }}>Actual %</th>
+                          <th style={{ padding: '0.5rem', textAlign: 'center', color: '#475569', fontWeight: 800, fontSize: '0.7rem', textTransform: 'uppercase' }}>Variance %</th>
+                          <th style={{ padding: '0.5rem', textAlign: 'left', color: '#475569', fontWeight: 800, fontSize: '0.7rem', textTransform: 'uppercase' }}>Start Date</th>
+                          <th style={{ padding: '0.5rem', textAlign: 'left', color: '#475569', fontWeight: 800, fontSize: '0.7rem', textTransform: 'uppercase' }}>Expected End</th>
+                          <th style={{ padding: '0.5rem', textAlign: 'left', color: '#475569', fontWeight: 800, fontSize: '0.7rem', textTransform: 'uppercase' }}>Actual End</th>
+                          <th style={{ padding: '0.5rem', textAlign: 'center', color: '#475569', fontWeight: 800, fontSize: '0.7rem', textTransform: 'uppercase' }}>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {implRes.flatMap((r, i) => {
+                          const sd = r.start_date ? new Date(r.start_date) : null;
+                          let expectedEndDateStr = '—';
+                          let expectedPct = 0;
+                          if (sd && r.Months > 0) {
+                              const e = new Date(sd); e.setMonth(e.getMonth() + r.Months); expectedEndDateStr = e.toISOString().split('T')[0];
+                              const elapsedDays = (new Date() - sd) / (1000 * 60 * 60 * 24);
+                              expectedPct = Math.min(100, (elapsedDays / 30.0 / r.Months) * 100);
+                          }
+                          
+                          if (!r.individuals || r.individuals.length === 0) {
+                              return [(
+                                <tr key={`cat-${i}`} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                  <td style={{ padding: '0.75rem 0.5rem', fontWeight: 700, color: '#0f172a' }}>{r['Resource Name']}</td>
+                                  <td style={{ padding: '0.75rem 0.5rem', color: '#94a3b8', fontStyle: 'italic' }}>Pending Assign</td>
+                                  <td style={{ padding: '0.75rem 0.5rem', textAlign: 'center', color: '#475569' }}>{r.Months || 0} Mo</td>
+                                  <td style={{ padding: '0.75rem 0.5rem', textAlign: 'center', color: '#94a3b8' }}>—</td>
+                                  <td style={{ padding: '0.75rem 0.5rem', textAlign: 'center', color: '#94a3b8' }}>—</td>
+                                  <td style={{ padding: '0.75rem 0.5rem', textAlign: 'center', color: '#94a3b8' }}>—</td>
+                                  <td style={{ padding: '0.75rem 0.5rem', color: '#94a3b8' }}>—</td>
+                                  <td style={{ padding: '0.75rem 0.5rem', color: '#94a3b8' }}>—</td>
+                                  <td style={{ padding: '0.75rem 0.5rem', color: '#94a3b8' }}>—</td>
+                                  <td style={{ padding: '0.75rem 0.5rem', textAlign: 'center' }}>
+                                    <span style={{ padding: '0.2rem 0.5rem', borderRadius: '4px', fontWeight: 800, fontSize: '0.65rem', background: '#f1f5f9', color: '#94a3b8' }}>PENDING</span>
+                                  </td>
+                                </tr>
+                              )];
+                          } else {
+                              return r.individuals.map((ind, indIdx) => {
+                                  let dynStatus = 'GREEN';
+                                  if (ind.actual_pct >= expectedPct) dynStatus = 'GREEN';
+                                  else if (ind.actual_pct >= (expectedPct - 10)) dynStatus = 'ORANGE';
+                                  else dynStatus = 'RED';
+                                  const statusColor = dynStatus === 'RED' ? '#ef4444' : dynStatus === 'ORANGE' ? '#f59e0b' : '#10b981';
+                                  const dynVar = parseFloat((ind.actual_pct - expectedPct).toFixed(1));
+                                  return (
+                                    <tr key={`ind-${i}-${indIdx}`} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                      <td style={{ padding: '0.6rem 0.5rem', fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap' }}>{indIdx === 0 ? r['Resource Name'] : ''}</td>
+                                      <td style={{ padding: '0.6rem 0.5rem', fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap' }}>{ind.name}</td>
+                                      <td style={{ padding: '0.6rem 0.5rem', textAlign: 'center', color: '#475569', whiteSpace: 'nowrap' }}>{indIdx === 0 ? (r.Months || 0) + ' Mo' : ''}</td>
+                                      <td style={{ padding: '0.6rem 0.5rem', textAlign: 'center', color: '#475569', fontWeight: 600, whiteSpace: 'nowrap' }}>{expectedPct.toFixed(1)}%</td>
+                                      <td style={{ padding: '0.6rem 0.5rem', textAlign: 'center', color: '#0f172a', fontWeight: 800, whiteSpace: 'nowrap' }}>{ind.actual_pct}%</td>
+                                      <td style={{ padding: '0.6rem 0.5rem', textAlign: 'center', color: dynVar < 0 ? '#ef4444' : '#10b981', fontWeight: 700, whiteSpace: 'nowrap' }}>{dynVar > 0 ? '+' : ''}{dynVar}%</td>
+                                      <td style={{ padding: '0.6rem 0.5rem', color: '#059669', whiteSpace: 'nowrap' }}>{indIdx === 0 && sd ? sd.toISOString().split('T')[0] : (indIdx === 0 ? '—' : '')}</td>
+                                      <td style={{ padding: '0.6rem 0.5rem', color: '#475569', whiteSpace: 'nowrap' }}>{indIdx === 0 ? expectedEndDateStr : ''}</td>
+                                      <td style={{ padding: '0.6rem 0.5rem', color: '#475569', whiteSpace: 'nowrap' }}>{indIdx === 0 ? (r.actual_end_date || '—') : ''}</td>
+                                      <td style={{ padding: '0.6rem 0.5rem', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                                        <span style={{ 
+                                          background: `${statusColor}22`,
+                                          color: statusColor,
+                                          padding: '0.2rem 0.5rem', borderRadius: '4px', fontWeight: 800, fontSize: '0.65rem'
+                                        }}>
+                                          {dynStatus}
+                                        </span>
+                                      </td>
+                                    </tr>
+                                  );
+                              });
+                          }
+                        })}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+                <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid #e2e8f0', background: '#f8fafc', borderBottomLeftRadius: '12px', borderBottomRightRadius: '12px', display: 'flex', justifyContent: 'flex-end' }}>
+                  <button onClick={() => setResourceUtilModalProject(null)} style={{ background: '#3b82f6', color: '#fff', border: 'none', padding: '0.5rem 1.5rem', borderRadius: '6px', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', boxShadow: '0 2px 4px rgba(59,130,246,0.2)' }}>Close Panel</button>
+                </div>
+              </motion.div>
+            </div>
+          );
+        })()}
+      </AnimatePresence>
     </div>
   );
 }

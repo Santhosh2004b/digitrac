@@ -21,6 +21,8 @@ class ApprovedProject(Base):
             return []
         if isinstance(self.full_excel_data, list):
             return self.full_excel_data
+        if isinstance(self.full_excel_data, dict):
+            return self.full_excel_data.get("items", [])
         return []
 
 class MissionAssignment(Base):
@@ -122,7 +124,7 @@ class ProjectItem(Base):
     id = Column(Integer, primary_key=True, index=True)
     project_id = Column(Integer, ForeignKey("projects.id"))
     
-    sl_no = Column(Integer)
+    sl_no = Column(String)
     sap_material_id = Column(String)
     description = Column(String)
     qty = Column(Integer)

@@ -1,0 +1,872 @@
+
+
+--- ERROR AT http://127.0.0.1:8000/excel/approve-assign ---
+Traceback (most recent call last):
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2127, in _exec_insertmany_context
+    dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~^
+        cursor,
+        ^^^^^^^
+    ...<2 lines>...
+        context,
+        ^^^^^^^^
+    )
+    ^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+psycopg2.errors.InvalidTextRepresentation: invalid input syntax for type integer: "A"
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\middleware\cors.py", line 96, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\middleware\cors.py", line 154, in simple_response
+    await self.app(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2531, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1700, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2586, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1720, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1239, in handle
+    await app(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 150, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 136, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 690, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 344, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\app\routes\excel.py", line 504, in approve_assign_project
+    db.flush()
+    ~~~~~~~~^^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4353, in flush
+    self._flush(objects)
+    ~~~~~~~~~~~^^^^^^^^^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4488, in _flush
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 122, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4449, in _flush
+    flush_context.execute()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 465, in execute
+    rec.execute(self)
+    ~~~~~~~~~~~^^^^^^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 641, in execute
+    util.preloaded.orm_persistence.save_obj(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self.mapper,
+        ^^^^^^^^^^^^
+        uow.states_for_mapper_hierarchy(self.mapper, False, False),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        uow,
+        ^^^^
+    )
+    ^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 94, in save_obj
+    _emit_insert_statements(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        base_mapper,
+        ^^^^^^^^^^^^
+    ...<3 lines>...
+        insert,
+        ^^^^^^^
+    )
+    ^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 1144, in _emit_insert_statements
+    result = connection.execute(
+        statement, multiparams, execution_options=execution_options
+    )
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1421, in execute
+    return meth(
+        self,
+        distilled_parameters,
+        execution_options or NO_OPTIONS,
+    )
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, distilled_params, execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1643, in _execute_clauseelement
+    ret = self._execute_context(
+        dialect,
+    ...<8 lines>...
+        cache_hit=cache_hit,
+    )
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1846, in _execute_context
+    return self._exec_insertmany_context(dialect, context)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2135, in _exec_insertmany_context
+    self._handle_dbapi_exception(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        e,
+        ^^
+    ...<4 lines>...
+        is_sub_exec=True,
+        ^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2365, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2127, in _exec_insertmany_context
+    dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~^
+        cursor,
+        ^^^^^^^
+    ...<2 lines>...
+        context,
+        ^^^^^^^^
+    )
+    ^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlalchemy.exc.DataError: (psycopg2.errors.InvalidTextRepresentation) invalid input syntax for type integer: "A"
+
+[SQL: INSERT INTO project_items (project_id, sl_no, sap_material_id, description, qty, purchase_unit_price, purchase_total, selling_unit_price, selling_total, gm, gm_pct, gst_pct, gst_value, net_value, item_type, sales_region, practice, sbu, oem, component ... 126595 characters truncated ... 7, p18, p19, sen_counter) ORDER BY sen_counter RETURNING project_items.id, project_items.id AS id__1]
+[parameters: {'qty__0': 0.0, 'selling_unit_price__0': 0.0, 'sales_region__0': '', 'item_type__0': '', 'description__0': 'Supply, installation, testing and commissioning of Data Center IT infrastructure', 'gm__0': 0.0, 'gst_pct__0': '', 'sl_no__0': 'A', 'gst_value__0': 0.0, 'sap_material_id__0': '', 'gm_pct__0': '', 'project_id__0': 47, 'component__0': '', 'net_value__0': 0.0, 'practice__0': '', 'sbu__0': '', 'oem__0': '', 'selling_total__0': 0.0, 'purchase_unit_price__0': 0.0, 'purchase_total__0': 0.0, 'qty__1': 0.0, 'selling_unit_price__1': 0.0, 'sales_region__1': '', 'item_type__1': '', 'description__1': 'Supply, installation, testing and commissioning of Data Center non-IT infrastructure', 'gm__1': 0.0, 'gst_pct__1': '', 'sl_no__1': 'B', 'gst_value__1': 0.0, 'sap_material_id__1': '', 'gm_pct__1': '', 'project_id__1': 47, 'component__1': '', 'net_value__1': 0.0, 'practice__1': '', 'sbu__1': '', 'oem__1': '', 'selling_total__1': 0.0, 'purchase_unit_price__1': 0.0, 'purchase_total__1': 0.0, 'qty__2': 0.0, 'selling_unit_price__2': 0.0, 'sales_region__2': '', 'item_type__2': '', 'description__2': 'Freight & Insurance (for A and B)', 'gm__2': 0.0, 'gst_pct__2': '', 'sl_no__2': 'C', 'gst_value__2': 0.0, 'sap_material_id__2': '' ... 6140 parameters truncated ... 'gm_pct__309': '', 'project_id__309': 47, 'component__309': '', 'net_value__309': 0.0, 'practice__309': '', 'sbu__309': '', 'oem__309': '', 'selling_total__309': 0.0, 'purchase_unit_price__309': 0.0, 'purchase_total__309': 0.0, 'qty__310': 1.0, 'selling_unit_price__310': 0.0, 'sales_region__310': '', 'item_type__310': '', 'description__310': '', 'gm__310': 0.0, 'gst_pct__310': '', 'sl_no__310': 'None', 'gst_value__310': 0.0, 'sap_material_id__310': '', 'gm_pct__310': '', 'project_id__310': 47, 'component__310': '', 'net_value__310': 0.0, 'practice__310': '', 'sbu__310': '', 'oem__310': '', 'selling_total__310': 0.0, 'purchase_unit_price__310': 0.0, 'purchase_total__310': 0.0, 'qty__311': 1.0, 'selling_unit_price__311': 0.0, 'sales_region__311': '', 'item_type__311': '', 'description__311': '', 'gm__311': 0.0, 'gst_pct__311': '', 'sl_no__311': 'None', 'gst_value__311': 0.0, 'sap_material_id__311': '', 'gm_pct__311': '', 'project_id__311': 47, 'component__311': '', 'net_value__311': 0.0, 'practice__311': '', 'sbu__311': '', 'oem__311': '', 'selling_total__311': 0.0, 'purchase_unit_price__311': 0.0, 'purchase_total__311': 0.0}]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+
+
+--- ERROR AT http://127.0.0.1:8000/excel/approve-assign ---
+Traceback (most recent call last):
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2127, in _exec_insertmany_context
+    dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~^
+        cursor,
+        ^^^^^^^
+    ...<2 lines>...
+        context,
+        ^^^^^^^^
+    )
+    ^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+psycopg2.errors.InvalidTextRepresentation: invalid input syntax for type integer: "A"
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\middleware\cors.py", line 96, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\middleware\cors.py", line 154, in simple_response
+    await self.app(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2531, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1700, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2586, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1720, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1239, in handle
+    await app(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 150, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 136, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 690, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 344, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\app\routes\excel.py", line 504, in approve_assign_project
+    db.flush()
+    ~~~~~~~~^^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4353, in flush
+    self._flush(objects)
+    ~~~~~~~~~~~^^^^^^^^^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4488, in _flush
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 122, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4449, in _flush
+    flush_context.execute()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 465, in execute
+    rec.execute(self)
+    ~~~~~~~~~~~^^^^^^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 641, in execute
+    util.preloaded.orm_persistence.save_obj(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self.mapper,
+        ^^^^^^^^^^^^
+        uow.states_for_mapper_hierarchy(self.mapper, False, False),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        uow,
+        ^^^^
+    )
+    ^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 94, in save_obj
+    _emit_insert_statements(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        base_mapper,
+        ^^^^^^^^^^^^
+    ...<3 lines>...
+        insert,
+        ^^^^^^^
+    )
+    ^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 1144, in _emit_insert_statements
+    result = connection.execute(
+        statement, multiparams, execution_options=execution_options
+    )
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1421, in execute
+    return meth(
+        self,
+        distilled_parameters,
+        execution_options or NO_OPTIONS,
+    )
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, distilled_params, execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1643, in _execute_clauseelement
+    ret = self._execute_context(
+        dialect,
+    ...<8 lines>...
+        cache_hit=cache_hit,
+    )
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1846, in _execute_context
+    return self._exec_insertmany_context(dialect, context)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2135, in _exec_insertmany_context
+    self._handle_dbapi_exception(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        e,
+        ^^
+    ...<4 lines>...
+        is_sub_exec=True,
+        ^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2365, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2127, in _exec_insertmany_context
+    dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~^
+        cursor,
+        ^^^^^^^
+    ...<2 lines>...
+        context,
+        ^^^^^^^^
+    )
+    ^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlalchemy.exc.DataError: (psycopg2.errors.InvalidTextRepresentation) invalid input syntax for type integer: "A"
+
+[SQL: INSERT INTO project_items (project_id, sl_no, sap_material_id, description, qty, purchase_unit_price, purchase_total, selling_unit_price, selling_total, gm, gm_pct, gst_pct, gst_value, net_value, item_type, sales_region, practice, sbu, oem, component ... 126595 characters truncated ... 7, p18, p19, sen_counter) ORDER BY sen_counter RETURNING project_items.id, project_items.id AS id__1]
+[parameters: {'qty__0': 0.0, 'selling_unit_price__0': 0.0, 'sales_region__0': '', 'item_type__0': '', 'description__0': 'Supply, installation, testing and commissioning of Data Center IT infrastructure', 'gm__0': 0.0, 'gst_pct__0': '', 'sl_no__0': 'A', 'gst_value__0': 0.0, 'sap_material_id__0': '', 'gm_pct__0': '', 'project_id__0': 48, 'component__0': '', 'net_value__0': 0.0, 'practice__0': '', 'sbu__0': '', 'oem__0': '', 'selling_total__0': 0.0, 'purchase_unit_price__0': 0.0, 'purchase_total__0': 0.0, 'qty__1': 0.0, 'selling_unit_price__1': 0.0, 'sales_region__1': '', 'item_type__1': '', 'description__1': 'Supply, installation, testing and commissioning of Data Center non-IT infrastructure', 'gm__1': 0.0, 'gst_pct__1': '', 'sl_no__1': 'B', 'gst_value__1': 0.0, 'sap_material_id__1': '', 'gm_pct__1': '', 'project_id__1': 48, 'component__1': '', 'net_value__1': 0.0, 'practice__1': '', 'sbu__1': '', 'oem__1': '', 'selling_total__1': 0.0, 'purchase_unit_price__1': 0.0, 'purchase_total__1': 0.0, 'qty__2': 0.0, 'selling_unit_price__2': 0.0, 'sales_region__2': '', 'item_type__2': '', 'description__2': 'Freight & Insurance (for A and B)', 'gm__2': 0.0, 'gst_pct__2': '', 'sl_no__2': 'C', 'gst_value__2': 0.0, 'sap_material_id__2': '' ... 6140 parameters truncated ... 'gm_pct__309': '', 'project_id__309': 48, 'component__309': '', 'net_value__309': 0.0, 'practice__309': '', 'sbu__309': '', 'oem__309': '', 'selling_total__309': 0.0, 'purchase_unit_price__309': 0.0, 'purchase_total__309': 0.0, 'qty__310': 1.0, 'selling_unit_price__310': 0.0, 'sales_region__310': '', 'item_type__310': '', 'description__310': '', 'gm__310': 0.0, 'gst_pct__310': '', 'sl_no__310': 'None', 'gst_value__310': 0.0, 'sap_material_id__310': '', 'gm_pct__310': '', 'project_id__310': 48, 'component__310': '', 'net_value__310': 0.0, 'practice__310': '', 'sbu__310': '', 'oem__310': '', 'selling_total__310': 0.0, 'purchase_unit_price__310': 0.0, 'purchase_total__310': 0.0, 'qty__311': 1.0, 'selling_unit_price__311': 0.0, 'sales_region__311': '', 'item_type__311': '', 'description__311': '', 'gm__311': 0.0, 'gst_pct__311': '', 'sl_no__311': 'None', 'gst_value__311': 0.0, 'sap_material_id__311': '', 'gm_pct__311': '', 'project_id__311': 48, 'component__311': '', 'net_value__311': 0.0, 'practice__311': '', 'sbu__311': '', 'oem__311': '', 'selling_total__311': 0.0, 'purchase_unit_price__311': 0.0, 'purchase_total__311': 0.0}]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+
+
+--- ERROR AT http://127.0.0.1:8000/excel/approve-assign ---
+Traceback (most recent call last):
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2127, in _exec_insertmany_context
+    dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~^
+        cursor,
+        ^^^^^^^
+    ...<2 lines>...
+        context,
+        ^^^^^^^^
+    )
+    ^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+psycopg2.errors.InvalidTextRepresentation: invalid input syntax for type integer: "A"
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\middleware\cors.py", line 96, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\middleware\cors.py", line 154, in simple_response
+    await self.app(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2531, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1700, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2586, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1720, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1239, in handle
+    await app(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 150, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 136, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 690, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 344, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\app\routes\excel.py", line 504, in approve_assign_project
+    db.flush()
+    ~~~~~~~~^^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4353, in flush
+    self._flush(objects)
+    ~~~~~~~~~~~^^^^^^^^^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4488, in _flush
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 122, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4449, in _flush
+    flush_context.execute()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 465, in execute
+    rec.execute(self)
+    ~~~~~~~~~~~^^^^^^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 641, in execute
+    util.preloaded.orm_persistence.save_obj(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self.mapper,
+        ^^^^^^^^^^^^
+        uow.states_for_mapper_hierarchy(self.mapper, False, False),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        uow,
+        ^^^^
+    )
+    ^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 94, in save_obj
+    _emit_insert_statements(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        base_mapper,
+        ^^^^^^^^^^^^
+    ...<3 lines>...
+        insert,
+        ^^^^^^^
+    )
+    ^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 1144, in _emit_insert_statements
+    result = connection.execute(
+        statement, multiparams, execution_options=execution_options
+    )
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1421, in execute
+    return meth(
+        self,
+        distilled_parameters,
+        execution_options or NO_OPTIONS,
+    )
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, distilled_params, execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1643, in _execute_clauseelement
+    ret = self._execute_context(
+        dialect,
+    ...<8 lines>...
+        cache_hit=cache_hit,
+    )
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1846, in _execute_context
+    return self._exec_insertmany_context(dialect, context)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2135, in _exec_insertmany_context
+    self._handle_dbapi_exception(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        e,
+        ^^
+    ...<4 lines>...
+        is_sub_exec=True,
+        ^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2365, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2127, in _exec_insertmany_context
+    dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~^
+        cursor,
+        ^^^^^^^
+    ...<2 lines>...
+        context,
+        ^^^^^^^^
+    )
+    ^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlalchemy.exc.DataError: (psycopg2.errors.InvalidTextRepresentation) invalid input syntax for type integer: "A"
+
+[SQL: INSERT INTO project_items (project_id, sl_no, sap_material_id, description, qty, purchase_unit_price, purchase_total, selling_unit_price, selling_total, gm, gm_pct, gst_pct, gst_value, net_value, item_type, sales_region, practice, sbu, oem, component ... 126595 characters truncated ... 7, p18, p19, sen_counter) ORDER BY sen_counter RETURNING project_items.id, project_items.id AS id__1]
+[parameters: {'qty__0': 0.0, 'selling_unit_price__0': 0.0, 'sales_region__0': '', 'item_type__0': '', 'description__0': 'Supply, installation, testing and commissioning of Data Center IT infrastructure', 'gm__0': 0.0, 'gst_pct__0': '', 'sl_no__0': 'A', 'gst_value__0': 0.0, 'sap_material_id__0': '', 'gm_pct__0': '', 'project_id__0': 49, 'component__0': '', 'net_value__0': 0.0, 'practice__0': '', 'sbu__0': '', 'oem__0': '', 'selling_total__0': 0.0, 'purchase_unit_price__0': 0.0, 'purchase_total__0': 0.0, 'qty__1': 0.0, 'selling_unit_price__1': 0.0, 'sales_region__1': '', 'item_type__1': '', 'description__1': 'Supply, installation, testing and commissioning of Data Center non-IT infrastructure', 'gm__1': 0.0, 'gst_pct__1': '', 'sl_no__1': 'B', 'gst_value__1': 0.0, 'sap_material_id__1': '', 'gm_pct__1': '', 'project_id__1': 49, 'component__1': '', 'net_value__1': 0.0, 'practice__1': '', 'sbu__1': '', 'oem__1': '', 'selling_total__1': 0.0, 'purchase_unit_price__1': 0.0, 'purchase_total__1': 0.0, 'qty__2': 0.0, 'selling_unit_price__2': 0.0, 'sales_region__2': '', 'item_type__2': '', 'description__2': 'Freight & Insurance (for A and B)', 'gm__2': 0.0, 'gst_pct__2': '', 'sl_no__2': 'C', 'gst_value__2': 0.0, 'sap_material_id__2': '' ... 6140 parameters truncated ... 'gm_pct__309': '', 'project_id__309': 49, 'component__309': '', 'net_value__309': 0.0, 'practice__309': '', 'sbu__309': '', 'oem__309': '', 'selling_total__309': 0.0, 'purchase_unit_price__309': 0.0, 'purchase_total__309': 0.0, 'qty__310': 1.0, 'selling_unit_price__310': 0.0, 'sales_region__310': '', 'item_type__310': '', 'description__310': '', 'gm__310': 0.0, 'gst_pct__310': '', 'sl_no__310': 'None', 'gst_value__310': 0.0, 'sap_material_id__310': '', 'gm_pct__310': '', 'project_id__310': 49, 'component__310': '', 'net_value__310': 0.0, 'practice__310': '', 'sbu__310': '', 'oem__310': '', 'selling_total__310': 0.0, 'purchase_unit_price__310': 0.0, 'purchase_total__310': 0.0, 'qty__311': 1.0, 'selling_unit_price__311': 0.0, 'sales_region__311': '', 'item_type__311': '', 'description__311': '', 'gm__311': 0.0, 'gst_pct__311': '', 'sl_no__311': 'None', 'gst_value__311': 0.0, 'sap_material_id__311': '', 'gm_pct__311': '', 'project_id__311': 49, 'component__311': '', 'net_value__311': 0.0, 'practice__311': '', 'sbu__311': '', 'oem__311': '', 'selling_total__311': 0.0, 'purchase_unit_price__311': 0.0, 'purchase_total__311': 0.0}]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+
+
+--- ERROR AT http://127.0.0.1:8000/excel/approve-assign ---
+Traceback (most recent call last):
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2127, in _exec_insertmany_context
+    dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~^
+        cursor,
+        ^^^^^^^
+    ...<2 lines>...
+        context,
+        ^^^^^^^^
+    )
+    ^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+psycopg2.errors.InvalidTextRepresentation: invalid input syntax for type double precision: ""
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\middleware\cors.py", line 96, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\middleware\cors.py", line 154, in simple_response
+    await self.app(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2531, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1700, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2586, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1720, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1239, in handle
+    await app(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 150, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 136, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 690, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 344, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\app\routes\excel.py", line 513, in approve_assign_project
+    db.flush()
+    ~~~~~~~~^^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4353, in flush
+    self._flush(objects)
+    ~~~~~~~~~~~^^^^^^^^^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4488, in _flush
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 122, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4449, in _flush
+    flush_context.execute()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 465, in execute
+    rec.execute(self)
+    ~~~~~~~~~~~^^^^^^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 641, in execute
+    util.preloaded.orm_persistence.save_obj(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self.mapper,
+        ^^^^^^^^^^^^
+        uow.states_for_mapper_hierarchy(self.mapper, False, False),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        uow,
+        ^^^^
+    )
+    ^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 94, in save_obj
+    _emit_insert_statements(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        base_mapper,
+        ^^^^^^^^^^^^
+    ...<3 lines>...
+        insert,
+        ^^^^^^^
+    )
+    ^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 1144, in _emit_insert_statements
+    result = connection.execute(
+        statement, multiparams, execution_options=execution_options
+    )
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1421, in execute
+    return meth(
+        self,
+        distilled_parameters,
+        execution_options or NO_OPTIONS,
+    )
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, distilled_params, execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1643, in _execute_clauseelement
+    ret = self._execute_context(
+        dialect,
+    ...<8 lines>...
+        cache_hit=cache_hit,
+    )
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1846, in _execute_context
+    return self._exec_insertmany_context(dialect, context)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2135, in _exec_insertmany_context
+    self._handle_dbapi_exception(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        e,
+        ^^
+    ...<4 lines>...
+        is_sub_exec=True,
+        ^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2365, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2127, in _exec_insertmany_context
+    dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~^
+        cursor,
+        ^^^^^^^
+    ...<2 lines>...
+        context,
+        ^^^^^^^^
+    )
+    ^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlalchemy.exc.DataError: (psycopg2.errors.InvalidTextRepresentation) invalid input syntax for type double precision: ""
+
+[SQL: INSERT INTO project_items (project_id, sl_no, sap_material_id, description, qty, purchase_unit_price, purchase_total, selling_unit_price, selling_total, gm, gm_pct, gst_pct, gst_value, net_value, item_type, sales_region, practice, sbu, oem, component ... 126595 characters truncated ... 7, p18, p19, sen_counter) ORDER BY sen_counter RETURNING project_items.id, project_items.id AS id__1]
+[parameters: {'sap_material_id__0': '', 'description__0': 'Supply, installation, testing and commissioning of Data Center IT infrastructure', 'purchase_unit_price__0': 0.0, 'item_type__0': '', 'sl_no__0': 'A', 'selling_total__0': 0.0, 'project_id__0': 50, 'sbu__0': '', 'selling_unit_price__0': 0.0, 'component__0': '', 'practice__0': '', 'gm__0': 0.0, 'gm_pct__0': '', 'qty__0': 0.0, 'gst_pct__0': '', 'oem__0': '', 'net_value__0': 0.0, 'purchase_total__0': 0.0, 'sales_region__0': '', 'gst_value__0': 0.0, 'sap_material_id__1': '', 'description__1': 'Supply, installation, testing and commissioning of Data Center non-IT infrastructure', 'purchase_unit_price__1': 0.0, 'item_type__1': '', 'sl_no__1': 'B', 'selling_total__1': 0.0, 'project_id__1': 50, 'sbu__1': '', 'selling_unit_price__1': 0.0, 'component__1': '', 'practice__1': '', 'gm__1': 0.0, 'gm_pct__1': '', 'qty__1': 0.0, 'gst_pct__1': '', 'oem__1': '', 'net_value__1': 0.0, 'purchase_total__1': 0.0, 'sales_region__1': '', 'gst_value__1': 0.0, 'sap_material_id__2': '', 'description__2': 'Freight & Insurance (for A and B)', 'purchase_unit_price__2': 0.0, 'item_type__2': '', 'sl_no__2': 'C', 'selling_total__2': 0.0, 'project_id__2': 50, 'sbu__2': '', 'selling_unit_price__2': 0.0, 'component__2': '' ... 6140 parameters truncated ... 'practice__309': '', 'gm__309': 0.0, 'gm_pct__309': '', 'qty__309': 1.0, 'gst_pct__309': '', 'oem__309': '', 'net_value__309': 0.0, 'purchase_total__309': 0.0, 'sales_region__309': '', 'gst_value__309': 0.0, 'sap_material_id__310': '', 'description__310': '', 'purchase_unit_price__310': 0.0, 'item_type__310': '', 'sl_no__310': 'None', 'selling_total__310': 0.0, 'project_id__310': 50, 'sbu__310': '', 'selling_unit_price__310': 0.0, 'component__310': '', 'practice__310': '', 'gm__310': 0.0, 'gm_pct__310': '', 'qty__310': 1.0, 'gst_pct__310': '', 'oem__310': '', 'net_value__310': 0.0, 'purchase_total__310': 0.0, 'sales_region__310': '', 'gst_value__310': 0.0, 'sap_material_id__311': '', 'description__311': '', 'purchase_unit_price__311': 0.0, 'item_type__311': '', 'sl_no__311': 'None', 'selling_total__311': 0.0, 'project_id__311': 50, 'sbu__311': '', 'selling_unit_price__311': 0.0, 'component__311': '', 'practice__311': '', 'gm__311': 0.0, 'gm_pct__311': '', 'qty__311': 1.0, 'gst_pct__311': '', 'oem__311': '', 'net_value__311': 0.0, 'purchase_total__311': 0.0, 'sales_region__311': '', 'gst_value__311': 0.0}]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+
+
+--- ERROR AT http://127.0.0.1:8000/excel/approve-assign ---
+Traceback (most recent call last):
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2127, in _exec_insertmany_context
+    dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~^
+        cursor,
+        ^^^^^^^
+    ...<2 lines>...
+        context,
+        ^^^^^^^^
+    )
+    ^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+psycopg2.errors.InvalidTextRepresentation: invalid input syntax for type double precision: ""
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\middleware\cors.py", line 96, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\middleware\cors.py", line 154, in simple_response
+    await self.app(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2531, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1700, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2586, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1720, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1239, in handle
+    await app(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 150, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 136, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 690, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 344, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\app\routes\excel.py", line 513, in approve_assign_project
+    db.flush()
+    ~~~~~~~~^^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4353, in flush
+    self._flush(objects)
+    ~~~~~~~~~~~^^^^^^^^^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4488, in _flush
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 122, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4449, in _flush
+    flush_context.execute()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 465, in execute
+    rec.execute(self)
+    ~~~~~~~~~~~^^^^^^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 641, in execute
+    util.preloaded.orm_persistence.save_obj(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self.mapper,
+        ^^^^^^^^^^^^
+        uow.states_for_mapper_hierarchy(self.mapper, False, False),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        uow,
+        ^^^^
+    )
+    ^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 94, in save_obj
+    _emit_insert_statements(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        base_mapper,
+        ^^^^^^^^^^^^
+    ...<3 lines>...
+        insert,
+        ^^^^^^^
+    )
+    ^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 1144, in _emit_insert_statements
+    result = connection.execute(
+        statement, multiparams, execution_options=execution_options
+    )
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1421, in execute
+    return meth(
+        self,
+        distilled_parameters,
+        execution_options or NO_OPTIONS,
+    )
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, distilled_params, execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1643, in _execute_clauseelement
+    ret = self._execute_context(
+        dialect,
+    ...<8 lines>...
+        cache_hit=cache_hit,
+    )
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1846, in _execute_context
+    return self._exec_insertmany_context(dialect, context)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2135, in _exec_insertmany_context
+    self._handle_dbapi_exception(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        e,
+        ^^
+    ...<4 lines>...
+        is_sub_exec=True,
+        ^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2365, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2127, in _exec_insertmany_context
+    dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~^
+        cursor,
+        ^^^^^^^
+    ...<2 lines>...
+        context,
+        ^^^^^^^^
+    )
+    ^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlalchemy.exc.DataError: (psycopg2.errors.InvalidTextRepresentation) invalid input syntax for type double precision: ""
+
+[SQL: INSERT INTO project_items (project_id, sl_no, sap_material_id, description, qty, purchase_unit_price, purchase_total, selling_unit_price, selling_total, gm, gm_pct, gst_pct, gst_value, net_value, item_type, sales_region, practice, sbu, oem, component ... 126595 characters truncated ... 7, p18, p19, sen_counter) ORDER BY sen_counter RETURNING project_items.id, project_items.id AS id__1]
+[parameters: {'sap_material_id__0': '', 'description__0': 'Supply, installation, testing and commissioning of Data Center IT infrastructure', 'purchase_unit_price__0': 0.0, 'item_type__0': '', 'sl_no__0': 'A', 'selling_total__0': 0.0, 'project_id__0': 51, 'sbu__0': '', 'selling_unit_price__0': 0.0, 'component__0': '', 'practice__0': '', 'gm__0': 0.0, 'gm_pct__0': '', 'qty__0': 0.0, 'gst_pct__0': '', 'oem__0': '', 'net_value__0': 0.0, 'purchase_total__0': 0.0, 'sales_region__0': '', 'gst_value__0': 0.0, 'sap_material_id__1': '', 'description__1': 'Supply, installation, testing and commissioning of Data Center non-IT infrastructure', 'purchase_unit_price__1': 0.0, 'item_type__1': '', 'sl_no__1': 'B', 'selling_total__1': 0.0, 'project_id__1': 51, 'sbu__1': '', 'selling_unit_price__1': 0.0, 'component__1': '', 'practice__1': '', 'gm__1': 0.0, 'gm_pct__1': '', 'qty__1': 0.0, 'gst_pct__1': '', 'oem__1': '', 'net_value__1': 0.0, 'purchase_total__1': 0.0, 'sales_region__1': '', 'gst_value__1': 0.0, 'sap_material_id__2': '', 'description__2': 'Freight & Insurance (for A and B)', 'purchase_unit_price__2': 0.0, 'item_type__2': '', 'sl_no__2': 'C', 'selling_total__2': 0.0, 'project_id__2': 51, 'sbu__2': '', 'selling_unit_price__2': 0.0, 'component__2': '' ... 6140 parameters truncated ... 'practice__309': '', 'gm__309': 0.0, 'gm_pct__309': '', 'qty__309': 1.0, 'gst_pct__309': '', 'oem__309': '', 'net_value__309': 0.0, 'purchase_total__309': 0.0, 'sales_region__309': '', 'gst_value__309': 0.0, 'sap_material_id__310': '', 'description__310': '', 'purchase_unit_price__310': 0.0, 'item_type__310': '', 'sl_no__310': 'None', 'selling_total__310': 0.0, 'project_id__310': 51, 'sbu__310': '', 'selling_unit_price__310': 0.0, 'component__310': '', 'practice__310': '', 'gm__310': 0.0, 'gm_pct__310': '', 'qty__310': 1.0, 'gst_pct__310': '', 'oem__310': '', 'net_value__310': 0.0, 'purchase_total__310': 0.0, 'sales_region__310': '', 'gst_value__310': 0.0, 'sap_material_id__311': '', 'description__311': '', 'purchase_unit_price__311': 0.0, 'item_type__311': '', 'sl_no__311': 'None', 'selling_total__311': 0.0, 'project_id__311': 51, 'sbu__311': '', 'selling_unit_price__311': 0.0, 'component__311': '', 'practice__311': '', 'gm__311': 0.0, 'gm_pct__311': '', 'qty__311': 1.0, 'gst_pct__311': '', 'oem__311': '', 'net_value__311': 0.0, 'purchase_total__311': 0.0, 'sales_region__311': '', 'gst_value__311': 0.0}]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+
+
+--- ERROR AT http://127.0.0.1:8000/manager/projects/71/resources/4/individuals/0/progress ---
+Traceback (most recent call last):
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\middleware\cors.py", line 96, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\middleware\cors.py", line 154, in simple_response
+    await self.app(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2531, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1700, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2586, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1720, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1239, in handle
+    await app(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 150, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 136, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 690, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\fastapi\routing.py", line 346, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\starlette\concurrency.py", line 34, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\anyio\to_thread.py", line 63, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 2592, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\.venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 1029, in run
+    result = context.run(func, *args)
+  File "C:\Users\User\OneDrive - Arche Global Private Limited\Digitrac\digitrac\backend\app\routes\manager.py", line 1003, in update_individual_progress
+    mission_name=project.name,
+                 ^^^^^^^^^^^^
+AttributeError: 'ApprovedProject' object has no attribute 'name'
