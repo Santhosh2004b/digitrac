@@ -990,18 +990,19 @@ def update_individual_progress(
     ind["variance"] = round(variance, 1)
     
     # Health Status
-    if data.progress_pct >= expected_pct:
-        ind["status"] = "GREEN"
+    if data.progress_pct > expected_pct:
+        ind["status"] = "Ahead of Schedule"
+    elif data.progress_pct == expected_pct:
+        ind["status"] = "On Track"
     elif data.progress_pct >= (expected_pct - 10):
-        ind["status"] = "ORANGE"
+        ind["status"] = "At Risk"
     else:
-        ind["status"] = "RED"
+        ind["status"] = "Behind Schedule"
         
-    # Check if variance is within the specified alert ranges (absolute value)
+    # Check if we should trigger VP Alert
     new_variance = ind["variance"]
-    abs_var = abs(new_variance)
     should_alert = False
-    if (20 <= abs_var <= 30) or (50 <= abs_var <= 60) or (80 <= abs_var <= 90):
+    if ind["status"] in ["At Risk", "Behind Schedule"]:
         should_alert = True
                 
     if should_alert:
@@ -1049,14 +1050,21 @@ def update_individual_progress(
         project.full_excel_data["kpis"]["progress_pct"] = overall_progress
 
     # Calculate overall project health
-    overall_health = "ASSIGNED"
+    overall_health = "Pending Assignment"
     if all_statuses:
-        if "RED" in all_statuses:
-            overall_health = "RED"
-        elif "ORANGE" in all_statuses:
-            overall_health = "ORANGE"
-        else:
-            overall_health = "GREEN"
+        behind_count = all_statuses.count("Behind Schedule")
+        at_risk_count = all_statuses.count("At Risk")
+        ahead_count = all_statuses.count("Ahead of Schedule")
+        on_track_count = all_statuses.count("On Track")
+        
+        if behind_count > 0:
+            overall_health = "Behind Schedule"
+        elif at_risk_count >= 2:
+            overall_health = "At Risk"
+        elif ahead_count > 0 and at_risk_count == 0:
+            overall_health = "Ahead of Schedule"
+        elif on_track_count > 0 or at_risk_count > 0:
+            overall_health = "On Track"
             
     project.full_excel_data["kpis"]["health"] = overall_health
 

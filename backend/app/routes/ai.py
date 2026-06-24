@@ -31,14 +31,14 @@ def ai_chat(request: ChatRequest, user: User = Depends(get_current_user)):
         ans = "I am a LangChain skeleton. Once you plug in your API keys, I will dynamically answer this based on the project database!"
 
         if role == "VP":
-            projects = db.query(ApprovedProject).filter(ApprovedProject.status.in_(["Green", "Orange", "Red"])).all()
+            projects = db.query(ApprovedProject).filter(ApprovedProject.status.in_(["Ahead of Schedule", "At Risk", "Behind Schedule", "On Track"])).all()
             if "overall portfolio health" in q:
                 total = len(projects)
-                green = sum(1 for p in projects if p.status == "Green")
-                ans = f"The portfolio currently consists of {total} active projects. {green} of them are operating in a healthy 'Green' status. Overall enterprise burn is tracking steadily, though specific projects may require attention."
+                green = sum(1 for p in projects if p.status == "Ahead of Schedule")
+                ans = f"The portfolio currently consists of {total} active projects. {green} of them are operating in a healthy 'Ahead of Schedule' status. Overall enterprise burn is tracking steadily, though specific projects may require attention."
                 
             elif "operating below their target margin" in q:
-                at_risk = [p.project_name for p in projects if p.status in ["Orange", "Red"]]
+                at_risk = [p.project_name for p in projects if p.status in ["At Risk", "Behind Schedule"]]
                 if at_risk:
                     ans = f"Yes, the following projects are operating below their target margins and are flagged as at-risk or critical: {', '.join(at_risk)}."
                 else:
@@ -52,7 +52,7 @@ def ai_chat(request: ChatRequest, user: User = Depends(get_current_user)):
                     ans = "There are no active projects to evaluate."
                     
             elif "critical governance escalations" in q:
-                red = [p.project_name for p in projects if p.status == "Red"]
+                red = [p.project_name for p in projects if p.status == "Behind Schedule"]
                 if red:
                     ans = f"There are critical governance escalations for the following projects: {', '.join(red)}. Please review the Project Coordinator's escalation board immediately."
                 else:
@@ -95,11 +95,11 @@ def ai_chat(request: ChatRequest, user: User = Depends(get_current_user)):
                 if not projects:
                     ans = "You do not have any active projects assigned to you."
                 else:
-                    healthy = [p.project_name for p in projects if p.status == "Green"]
+                    healthy = [p.project_name for p in projects if p.status == "Ahead of Schedule"]
                     if healthy:
                         ans = f"Your projects are performing well. {len(healthy)} of your projects ({', '.join(healthy)}) are operating at or above their target margins."
                     else:
-                        ans = "Warning: None of your active projects are currently maintaining 'Green' status. Immediate intervention may be required to prevent margin erosion."
+                        ans = "Warning: None of your active projects are currently maintaining 'Ahead of Schedule' status. Immediate intervention may be required to prevent margin erosion."
             
         return ChatResponse(answer=ans)
         

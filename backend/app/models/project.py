@@ -113,6 +113,9 @@ class ProjectResource(Base):
     # Execution Tracking Fields
     actual_months = Column(Float, default=0.0)
     work_start_date = Column(DateTime, nullable=True)
+    start_date = Column(DateTime, nullable=True)
+    expected_end_date = Column(DateTime, nullable=True)
+    actual_end_date = Column(DateTime, nullable=True)
     deadline = Column(DateTime, nullable=True)
     last_updated = Column(DateTime, default=datetime.utcnow)
 

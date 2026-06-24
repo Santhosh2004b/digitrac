@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { Terminal } from 'lucide-react';
 
-const API = 'http://127.0.0.1:8000';
+const API = 'http://localhost:8000';
 
 export default function LoginPage() {
   const router = useRouter();

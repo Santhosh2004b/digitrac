@@ -135,9 +135,15 @@ class MailService:
                         </td>
                     </tr>
                     <tr>
-                        <td>
+                        <td style="padding-bottom: 1rem;">
                             <div style="font-size: 0.6rem; color: #8896ab; font-weight: 800; letter-spacing: 0.05em;">RESOURCE / INDIVIDUAL</div>
                             <div style="font-size: 1rem; font-weight: 600; color: #e2e8f0;">{resource_name}</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div style="font-size: 0.6rem; color: #8896ab; font-weight: 800; letter-spacing: 0.05em;">TRIGGER DATE</div>
+                            <div style="font-size: 1rem; font-weight: 600; color: #e2e8f0;">{datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")}</div>
                         </td>
                     </tr>
                 </table>

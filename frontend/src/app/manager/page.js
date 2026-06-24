@@ -73,6 +73,11 @@ export default function ManagerDashboard() {
 
   const [projects, setProjects] = useState([]);
   const [toast, setToast] = useState({ show: false, type: 'success', message: '' });
+  const [vpAlertOpen, setVpAlertOpen] = useState(true);
+  useEffect(() => {
+    const t = setTimeout(() => setVpAlertOpen(false), 5000);
+    return () => clearTimeout(t);
+  }, []);
 
   const [selectedProject, setSelectedProject] = useState(null);
 
@@ -1140,84 +1145,179 @@ export default function ManagerDashboard() {
 
                     
 
-                    {selectedProject.status === 'Red' && (
-                        <motion.div variants={{ hidden: { opacity: 0, y: 15 }, show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } } }} style={{ background: '#fef2f2', border: '1px solid #fecaca', borderLeft: '4px solid #ef4444', padding: '1rem', borderRadius: '6px', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    {(() => {
+                        const startDateStr = selectedProject.assigned_at ? new Date(selectedProject.assigned_at).toISOString().split('T')[0] : '';
+                        const endDateStr = selectedProject.assigned_at ? (() => { const d = new Date(selectedProject.assigned_at); d.setMonth(d.getMonth() + (selectedProject.kpis?.duration_months || selectedProject.duration || 0)); return d.toISOString().split('T')[0]; })() : '';
+                        let elapsedPct = 0;
+                        if (startDateStr && endDateStr) {
+                            const s = new Date(startDateStr);
+                            const e = new Date(endDateStr);
+                            const now = new Date();
+                            if (now > e) elapsedPct = 100;
+                            else if (now > s) elapsedPct = Math.round(((now - s) / (e - s)) * 100);
+                        }
+                        let themeColor, themeBg, themeText;
+                        if (elapsedPct >= 85) {
+                            themeColor = 'rgba(239, 68, 68, 0.08)'; themeBg = '#fee2e2'; themeText = '#b91c1c';
+                        } else if (elapsedPct >= 60) {
+                            themeColor = 'rgba(245, 158, 11, 0.08)'; themeBg = '#fef3c7'; themeText = '#b45309';
+                        } else if (elapsedPct > 0) {
+                            themeColor = 'rgba(16, 185, 129, 0.08)'; themeBg = '#d1fae5'; themeText = '#047857';
+                        } else {
+                            themeColor = 'rgba(37, 99, 235, 0.05)'; themeBg = '#dbeafe'; themeText = '#1d4ed8';
+                        }
 
-                            <div style={{ color: '#ef4444', fontWeight: 800 }}>CRITICAL</div>
+                        let dynStatus = selectedProject.kpis?.health || selectedProject.status || 'Pending Assignment';
+                        if (dynStatus === 'Red' || dynStatus === 'RED') dynStatus = 'Behind Schedule';
+                        else if (dynStatus === 'Orange' || dynStatus === 'ORANGE') dynStatus = 'At Risk';
+                        else if (dynStatus === 'Green' || dynStatus === 'GREEN' || dynStatus === 'Good' || dynStatus === 'GOOD') dynStatus = 'Ahead of Schedule';
+                        else if (dynStatus === 'Blue' || dynStatus === 'BLUE') dynStatus = 'On Track';
 
-                            <div style={{ fontSize: '0.85rem', color: '#7f1d1d' }}>Project Operating Below Approved Margin Target. A Margin Escalation record has been sent to the Coordinator. You may continue operations, but please review costing immediately.</div>
-                        </motion.div>
-                    )}
+                        // Derive Project Health from resource statuses
+                        const implRes = selectedProject.implementation_resources || selectedProject.kpis?.implementation_resources || [];
+                        if (implRes.length > 0) {
+                            let behindCount = 0;
+                            let atRiskCount = 0;
+                            
+                            implRes.forEach(res => {
+                                if (res.start_date && res.individuals) {
+                                    res.individuals.forEach(ind => {
+                                        let expectedPct = 0;
+                                        const elapsedDays = (new Date() - new Date(res.start_date)) / (1000 * 60 * 60 * 24);
+                                        const elapsedMonths = elapsedDays / 30.0;
+                                        expectedPct = Math.min(100, (elapsedMonths / (res.Months || 1)) * 100);
+                                        
+                                        if (ind.actual_pct < (expectedPct - 10)) behindCount++;
+                                        else if (ind.actual_pct >= (expectedPct - 10) && ind.actual_pct < expectedPct) atRiskCount++;
+                                    });
+                                }
+                            });
+                            
+                            if (behindCount > 0) {
+                                dynStatus = 'Behind Schedule';
+                            } else if (atRiskCount >= 2) {
+                                dynStatus = 'At Risk';
+                            } else {
+                                dynStatus = 'Ahead of Schedule';
+                            }
+                        }
 
-                    {selectedProject.status === 'Orange' && (
-                        <motion.div variants={{ hidden: { opacity: 0, y: 15 }, show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } } }} style={{ background: '#fffbeb', border: '1px solid #fde68a', borderLeft: '4px solid #f59e0b', padding: '1rem', borderRadius: '6px', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        return (
+                            <>
+                                <div style={{ position: 'relative', overflow: 'hidden', background: '#ffffff', border: `1px solid ${elapsedPct >= 85 ? '#fca5a5' : '#e2e8f0'}`, borderRadius: '6px', padding: '0.5rem 0.75rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+                                    <div style={{ position: 'absolute', top: 0, left: 0, height: '100%', width: `${elapsedPct}%`, background: themeColor, zIndex: 0 }}></div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', zIndex: 1, position: 'relative' }}>
+                                        <div style={{ width: '32px', height: '32px', borderRadius: '6px', background: themeBg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: themeText }}><Icons.Clock /></div>
+                                        <div>
+                                            <div style={{ fontSize: '0.6rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', marginBottom: '0.1rem', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                Overall Project Lead & Timeline
+                                                {elapsedPct > 0 && <span style={{ padding: '0.1rem 0.3rem', background: themeBg, color: themeText, borderRadius: '4px', fontSize: '0.5rem' }}>{elapsedPct}% ELAPSED</span>}
+                                            </div>
+                                            <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.15rem' }}>{selectedProject.name}</div>
+                                            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                                                <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 700 }}>START:</span>
+                                                <input type="date" defaultValue={startDateStr} style={{ padding: '0.1rem 0.3rem', border: `1px solid ${elapsedPct >= 85 ? '#fca5a5' : '#cbd5e1'}`, borderRadius: '4px', fontSize: '0.7rem', outline: 'none', color: '#0f172a', fontWeight: 600, background: 'rgba(255,255,255,0.8)' }} />
+                                                <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 700, marginLeft: '0.5rem' }}>END:</span>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                                    <input type="date" defaultValue={endDateStr} style={{ padding: '0.1rem 0.3rem', border: `1px solid ${elapsedPct >= 85 ? '#fca5a5' : '#cbd5e1'}`, borderRadius: '4px', fontSize: '0.7rem', outline: 'none', color: '#0f172a', fontWeight: 600, background: 'rgba(255,255,255,0.8)' }} />
+                                                    <button onClick={() => { setIsDurationConfirmed(true); alert("Project duration confirmed successfully!"); }} style={{ background: isDurationConfirmed ? '#d1fae5' : '#10b981', color: isDurationConfirmed ? '#047857' : '#fff', border: isDurationConfirmed ? '1px solid #10b981' : 'none', borderRadius: '4px', padding: '0.2rem 0.5rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', justifyContent: 'center', boxShadow: isDurationConfirmed ? 'none' : '0 1px 2px rgba(0,0,0,0.1)', height: '22px', fontSize: '0.65rem', fontWeight: 700 }} title="Confirm Duration"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>{isDurationConfirmed ? "Confirmed" : "Confirm"}</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', zIndex: 1, position: 'relative' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><label style={{ fontSize: '0.6rem', fontWeight: 700, color: '#64748b' }}>MANAGER EMAIL (EDITABLE)</label><input type="email" defaultValue={selectedProject.manager_name ? `${selectedProject.manager_name.toLowerCase().replace(' ', '.')}@arche.global` : ''} style={{ padding: '0.3rem 0.5rem', border: `1px solid ${elapsedPct >= 85 ? '#fca5a5' : '#cbd5e1'}`, borderRadius: '4px', fontSize: '0.75rem', width: '200px', background: 'rgba(255,255,255,0.8)', outline: 'none', color: '#0f172a', fontWeight: 600 }} /></div>
+                                        <button onClick={() => alert("Manager assignment & timing updated successfully!")} style={{ background: '#2563eb', border: 'none', color: '#fff', padding: '0.35rem 0.75rem', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 600, cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.1)' }}>Update Action</button>
+                                    </div>
+                                </div>
 
-                            <div style={{ color: '#f59e0b', fontWeight: 800 }}>WARNING</div>
+                                {(() => {
+                                    const vpAlerts = [];
+                                    (selectedProject.implementation_resources || []).forEach(res => {
+                                        if (res.start_date && res.individuals) {
+                                            res.individuals.forEach(ind => {
+                                                let expectedPct = 0;
+                                                const elapsedDays = (new Date() - new Date(res.start_date)) / (1000 * 60 * 60 * 24);
+                                                const elapsedMonths = elapsedDays / 30.0;
+                                                expectedPct = Math.min(100, (elapsedMonths / (res.Months || 1)) * 100);
+                                                
+                                                let status = 'On Track';
+                                                if (ind.actual_pct > expectedPct) status = 'Ahead of Schedule';
+                                                else if (ind.actual_pct === expectedPct) status = 'On Track';
+                                                else if (ind.actual_pct >= (expectedPct - 10)) status = 'At Risk';
+                                                else status = 'Behind Schedule';
+                                                
+                                                if (status === 'At Risk' || status === 'Behind Schedule') {
+                                                    vpAlerts.push({
+                                                        resourceName: res['Resource Name'],
+                                                        personName: ind.name,
+                                                        projectName: selectedProject.name,
+                                                        variance: parseFloat((ind.actual_pct - expectedPct).toFixed(1)),
+                                                        triggerDate: new Date().toLocaleDateString(),
+                                                        status
+                                                    });
+                                                }
+                                            });
+                                        }
+                                    });
 
-                            <div style={{ fontSize: '0.85rem', color: '#92400e' }}>Margin Risk Detected. Over 50% hours consumed and margin is slipping.</div>
-                        </motion.div>
-                    )}
+                                    if (vpAlerts.length > 0) {
+                                        return (
+                                            <motion.div variants={{ hidden: { opacity: 0, y: 15 }, show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } } }} style={{ background: '#fef2f2', border: '1px solid #fecaca', borderLeft: '4px solid #ef4444', borderRadius: '6px', marginBottom: '1.5rem', overflow: 'hidden' }}>
+                                                <div 
+                                                    onClick={() => setVpAlertOpen(!vpAlertOpen)}
+                                                    style={{ cursor: 'pointer', padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                                                >
+                                                    <div style={{ color: '#ef4444', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                        <Icons.Bell /> ⚠ Action Required ({vpAlerts.length})
+                                                    </div>
+                                                    <span style={{ color: '#ef4444', fontSize: '0.7rem', fontWeight: 800 }}>{vpAlertOpen ? 'COLLAPSE ▲' : 'EXPAND ▼'}</span>
+                                                </div>
+                                                <AnimatePresence>
+                                                    {vpAlertOpen && (
+                                                        <motion.div 
+                                                            initial={{ height: 0, opacity: 0 }} 
+                                                            animate={{ height: 'auto', opacity: 1 }} 
+                                                            exit={{ height: 0, opacity: 0 }}
+                                                            transition={{ duration: 0.3 }}
+                                                        >
+                                                            <div style={{ padding: '0 1rem 1rem 1rem' }}>
+                                                                <table style={{ width: '100%', fontSize: '0.75rem', textAlign: 'left', borderCollapse: 'collapse' }}>
+                                                                    <thead>
+                                                                        <tr style={{ borderBottom: '1px solid #fca5a5' }}>
+                                                                            <th style={{ padding: '0.4rem', color: '#991b1b' }}>Project Name</th>
+                                                                            <th style={{ padding: '0.4rem', color: '#991b1b' }}>Resource Name</th>
+                                                                            <th style={{ padding: '0.4rem', color: '#991b1b' }}>Person Name</th>
+                                                                            <th style={{ padding: '0.4rem', color: '#991b1b' }}>Variance %</th>
+                                                                            <th style={{ padding: '0.4rem', color: '#991b1b' }}>Date</th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody>
+                                                                        {vpAlerts.map((alert, i) => (
+                                                                            <tr key={i} style={{ borderBottom: '1px solid #fee2e2' }}>
+                                                                                <td style={{ padding: '0.4rem', color: '#7f1d1d', fontWeight: 600 }}>{alert.projectName}</td>
+                                                                                <td style={{ padding: '0.4rem', color: '#7f1d1d' }}>{alert.resourceName}</td>
+                                                                                <td style={{ padding: '0.4rem', color: '#7f1d1d' }}>{alert.personName}</td>
+                                                                                <td style={{ padding: '0.4rem', color: '#ef4444', fontWeight: 800 }}>{alert.variance > 0 ? '+' : ''}{alert.variance}% ({alert.status})</td>
+                                                                                <td style={{ padding: '0.4rem', color: '#7f1d1d' }}>{alert.triggerDate}</td>
+                                                                            </tr>
+                                                                        ))}
+                                                                    </tbody>
+                                                                </table>
+                                                            </div>
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
+                                            </motion.div>
+                                        );
+                                    }
+                                    return null;
+                                })()}
 
 
-
-                    {/* KPI RIBBON */}
-                    <motion.div variants={{ hidden: { opacity: 0, y: 15 }, show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } } }} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1rem', marginBottom: '0.75rem', display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '1rem', alignItems: 'center', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
-
-                        <div>
-
-                            <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#64748b', marginBottom: '0.25rem', letterSpacing: '0.05em' }}>PROJECT HEALTH</div>
-
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-
-                                <div style={{ 
-
-                                    width: '12px', height: '12px', borderRadius: '50%', 
-
-                                    background: selectedProject.status === 'Red' ? '#ef4444' : selectedProject.status === 'Orange' ? '#f59e0b' : '#10b981',
-
-                                    boxShadow: `0 0 8px ${selectedProject.status === 'Red' ? '#ef4444' : selectedProject.status === 'Orange' ? '#f59e0b' : '#10b981'}`
-
-                                }}></div>
-
-                                <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>{selectedProject.status}</span>
-
-                            </div>
-
-                        </div>
-
-                        <div>
-
-                            <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#64748b', marginBottom: '0.25rem', letterSpacing: '0.05em' }}>HOURS (P / A)</div>
-
-                            <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#0f172a' }}>{selectedProject.kpis?.planned_hours || 0} / <span style={{ color: selectedProject.kpis?.hours_variance > 0 ? '#ef4444' : '#059669' }}>{selectedProject.kpis?.actual_hours || 0}</span></div>
-
-                        </div>
-
-                        <div>
-
-                            <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#64748b', marginBottom: '0.25rem', letterSpacing: '0.05em' }}>COST (P / A)</div>
-
-                            <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#0f172a' }}>₹{Math.round(selectedProject.kpis?.planned_cost || 0).toLocaleString('en-IN')} / <span style={{ color: selectedProject.kpis?.cost_variance > 0 ? '#ef4444' : '#059669' }}>₹{Math.round(selectedProject.kpis?.actual_cost || 0).toLocaleString('en-IN')}</span></div>
-
-                        </div>
-
-                        <div>
-
-                            <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#64748b', marginBottom: '0.25rem', letterSpacing: '0.05em' }}>MARGIN (T / C)</div>
-
-                            <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#0f172a' }}>{selectedProject.kpis?.target_margin_pct?.toFixed(2)}% / <span style={{ color: selectedProject.kpis?.current_margin_pct < selectedProject.kpis?.target_margin_pct ? '#ef4444' : '#059669' }}>{selectedProject.kpis?.current_margin_pct?.toFixed(2)}%</span></div>
-
-                        </div>
-
-                        <div>
-
-                            <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#64748b', marginBottom: '0.25rem', letterSpacing: '0.05em' }}>FORECAST MARGIN</div>
-
-                            <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#2563eb' }}>{selectedProject.kpis?.forecast_margin_pct?.toFixed(2)}%</div>
-
-                        </div>
-
-                    </motion.div>
+                            </>
+                        );
+                    })()}
 
 
 
@@ -1251,90 +1351,7 @@ export default function ManagerDashboard() {
                         {innerTab === 'COSTING' && (
                             <div style={{ display: 'flex', flexDirection: 'column' }}>
 
-                                {/* Overall Project Lead & Tracking Box */}
-                                {(() => {
-                                    const startDateStr = selectedProject.assigned_at ? new Date(selectedProject.assigned_at).toISOString().split('T')[0] : '';
-                                    const endDateStr = selectedProject.assigned_at ? (() => { const d = new Date(selectedProject.assigned_at); d.setMonth(d.getMonth() + (selectedProject.kpis?.duration_months || selectedProject.duration || 0)); return d.toISOString().split('T')[0]; })() : '';
-                                    let elapsedPct = 0;
-                                    if (startDateStr && endDateStr) {
-                                        const s = new Date(startDateStr);
-                                        const e = new Date(endDateStr);
-                                        const now = new Date();
-                                        if (now > e) elapsedPct = 100;
-                                        else if (now > s) elapsedPct = Math.round(((now - s) / (e - s)) * 100);
-                                    }
-                                    let themeColor, themeBg, themeText;
-                                    if (elapsedPct >= 85) {
-                                        themeColor = 'rgba(239, 68, 68, 0.08)'; // Red wipe
-                                        themeBg = '#fee2e2'; themeText = '#b91c1c';
-                                    } else if (elapsedPct >= 60) {
-                                        themeColor = 'rgba(245, 158, 11, 0.08)'; // Amber wipe
-                                        themeBg = '#fef3c7'; themeText = '#b45309';
-                                    } else if (elapsedPct > 0) {
-                                        themeColor = 'rgba(16, 185, 129, 0.08)'; // Green wipe
-                                        themeBg = '#d1fae5'; themeText = '#047857';
-                                    } else {
-                                        themeColor = 'rgba(37, 99, 235, 0.05)'; // Blue wipe
-                                        themeBg = '#dbeafe'; themeText = '#1d4ed8';
-                                    }
 
-                                    return (
-                                        <div style={{ position: 'relative', overflow: 'hidden', background: '#ffffff', border: `1px solid ${elapsedPct >= 85 ? '#fca5a5' : '#e2e8f0'}`, borderRadius: '6px', padding: '0.5rem 0.75rem', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
-                                            {/* Full Height Background Wipe */}
-                                            <div style={{ position: 'absolute', top: 0, left: 0, height: '100%', width: `${elapsedPct}%`, background: themeColor, zIndex: 0 }}></div>
-                                            
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', zIndex: 1, position: 'relative' }}>
-                                                <div style={{ width: '32px', height: '32px', borderRadius: '6px', background: themeBg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: themeText }}>
-                                                    <Icons.Clock />
-                                                </div>
-                                                <div>
-                                                    <div style={{ fontSize: '0.6rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', marginBottom: '0.1rem', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                        Overall Project Lead & Timeline
-                                                        {elapsedPct > 0 && <span style={{ padding: '0.1rem 0.3rem', background: themeBg, color: themeText, borderRadius: '4px', fontSize: '0.5rem' }}>{elapsedPct}% ELAPSED</span>}
-                                                    </div>
-                                                    <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.15rem' }}>{selectedProject.name}</div>
-                                                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                                                        <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 700 }}>START:</span>
-                                                        <input type="date" defaultValue={startDateStr} style={{ padding: '0.1rem 0.3rem', border: `1px solid ${elapsedPct >= 85 ? '#fca5a5' : '#cbd5e1'}`, borderRadius: '4px', fontSize: '0.7rem', outline: 'none', color: '#0f172a', fontWeight: 600, background: 'rgba(255,255,255,0.8)' }} />
-                                                        <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 700, marginLeft: '0.5rem' }}>END:</span>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                                                            <input type="date" defaultValue={endDateStr} style={{ padding: '0.1rem 0.3rem', border: `1px solid ${elapsedPct >= 85 ? '#fca5a5' : '#cbd5e1'}`, borderRadius: '4px', fontSize: '0.7rem', outline: 'none', color: '#0f172a', fontWeight: 600, background: 'rgba(255,255,255,0.8)' }} />
-                                                            <button 
-                                                                onClick={() => { setIsDurationConfirmed(true); alert("Project duration confirmed successfully!"); }}
-                                                                style={{ background: isDurationConfirmed ? '#d1fae5' : '#10b981', color: isDurationConfirmed ? '#047857' : '#fff', border: isDurationConfirmed ? '1px solid #10b981' : 'none', borderRadius: '4px', padding: '0.2rem 0.5rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', justifyContent: 'center', boxShadow: isDurationConfirmed ? 'none' : '0 1px 2px rgba(0,0,0,0.1)', height: '22px', fontSize: '0.65rem', fontWeight: 700 }}
-                                                                title="Confirm Duration"
-                                                                onMouseOver={(e) => { if(!isDurationConfirmed) e.currentTarget.style.opacity = '0.8' }}
-                                                                onMouseOut={(e) => { if(!isDurationConfirmed) e.currentTarget.style.opacity = '1' }}
-                                                            >
-                                                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                                                {isDurationConfirmed ? "Confirmed" : "Confirm"}
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', zIndex: 1, position: 'relative' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                    <label style={{ fontSize: '0.6rem', fontWeight: 700, color: '#64748b' }}>MANAGER EMAIL (EDITABLE)</label>
-                                                    <input 
-                                                        type="email"
-                                                        defaultValue={selectedProject.manager_name ? `${selectedProject.manager_name.toLowerCase().replace(' ', '.')}@arche.global` : ''}
-                                                        style={{ padding: '0.3rem 0.5rem', border: `1px solid ${elapsedPct >= 85 ? '#fca5a5' : '#cbd5e1'}`, borderRadius: '4px', fontSize: '0.75rem', width: '200px', background: 'rgba(255,255,255,0.8)', outline: 'none', color: '#0f172a', fontWeight: 600 }}
-                                                    />
-                                                </div>
-                                                <button 
-                                                    onClick={() => alert("Manager assignment & timing updated successfully!")}
-                                                    style={{ background: '#2563eb', border: 'none', color: '#fff', padding: '0.35rem 0.75rem', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 600, cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.1)' }}
-                                                    onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
-                                                    onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
-                                                >
-                                                    Update Action
-                                                </button>
-                                            </div>
-                                        </div>
-                                    );
-                                })()}
 
                                 <div style={{ background: 'linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%)', borderRadius: '8px', overflow: 'visible', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.02)' }}>
                                 <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', color: '#0f172a' }}>
@@ -1481,6 +1498,44 @@ export default function ManagerDashboard() {
                             const implResources = selectedProject.implementation_resources || [];
                             const unstarted = implResources.filter(r => !r.start_date);
                             const allActive = unstarted.length === 0 && implResources.length > 0;
+                            
+                            // Task 2: Health Calculation Logic
+                            let behindCount = 0;
+                            let atRiskCount = 0;
+                            let onTrackCount = 0;
+                            let aheadCount = 0;
+                            
+                            implResources.forEach(res => {
+                                if (res.start_date && res.individuals) {
+                                    res.individuals.forEach(ind => {
+                                        let expectedPct = 0;
+                                        const elapsedDays = (new Date() - new Date(res.start_date)) / (1000 * 60 * 60 * 24);
+                                        const elapsedMonths = elapsedDays / 30.0;
+                                        expectedPct = Math.min(100, (elapsedMonths / (res.Months || 1)) * 100);
+                                        
+                                        if (ind.actual_pct > expectedPct) aheadCount++;
+                                        else if (ind.actual_pct === expectedPct) onTrackCount++;
+                                        else if (ind.actual_pct >= (expectedPct - 10)) atRiskCount++;
+                                        else behindCount++;
+                                    });
+                                }
+                            });
+                            
+                            let projectHealth = 'Pending Assignment';
+                            let phColor = '#94a3b8';
+                            if (behindCount > 0) {
+                                projectHealth = 'Behind Schedule';
+                                phColor = '#ef4444';
+                            } else if (atRiskCount >= 2) {
+                                projectHealth = 'At Risk';
+                                phColor = '#f59e0b';
+                            } else if (aheadCount > 0 && atRiskCount === 0) {
+                                projectHealth = 'Ahead of Schedule';
+                                phColor = '#10b981';
+                            } else if (onTrackCount > 0 || atRiskCount > 0) {
+                                projectHealth = 'On Track';
+                                phColor = '#3b82f6';
+                            }
 
                             const activateAll = async () => {
                                 const pending = implResources.map((r, idx) => ({ r, idx })).filter(({ r }) => !r.start_date);
@@ -1504,6 +1559,10 @@ export default function ManagerDashboard() {
                                         <span style={{ fontSize: '0.7rem', color: '#64748b' }}>
                                             · {implResources.filter(r => r.start_date).length} Tracking · {unstarted.length} Pending
                                         </span>
+                                        <div style={{ marginLeft: '1rem', padding: '0.2rem 0.6rem', borderRadius: '4px', background: `${phColor}15`, border: `1px solid ${phColor}40`, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: phColor, boxShadow: `0 0 6px ${phColor}` }}></div>
+                                            <span style={{ fontSize: '0.65rem', fontWeight: 800, color: phColor, letterSpacing: '0.05em', textTransform: 'uppercase' }}>PROJECT HEALTH: {projectHealth}</span>
+                                        </div>
                                     </div>
                                     {allActive ? (
                                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.4rem 1rem', borderRadius: '6px', background: '#d1fae5', color: '#059669', fontSize: '0.75rem', fontWeight: 800 }}>
@@ -1526,21 +1585,24 @@ export default function ManagerDashboard() {
 
                                     <thead>
                                         <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                                            <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 700 }}>RESOURCE NAME</th>
-                                            <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 700 }}>PERSON NAME</th>
-                                            <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 700 }}>QTY</th>
-                                            <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 700 }}>PLANNED DURATION</th>
-                                            <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 700 }}>ACTUAL DURATION</th>
-                                            <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 700 }}>PROGRESS (EXP VS ACT)</th>
-                                            <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 700 }}>VARIANCE %</th>
-                                            <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 700 }}>STATUS</th>
-                                            <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 700 }}>ACTION / REPORT</th>
+                                            <th style={{ padding: '0.5rem 0.4rem', borderRight: '1px solid #e2e8f0', color: '#475569', fontWeight: 700, whiteSpace: 'nowrap', fontSize: '0.65rem' }}>RESOURCE NAME</th>
+                                            <th style={{ padding: '0.5rem 0.4rem', borderRight: '1px solid #e2e8f0', color: '#475569', fontWeight: 700, whiteSpace: 'nowrap', fontSize: '0.65rem' }}>PERSON NAME</th>
+                                            <th style={{ padding: '0.5rem 0.4rem', borderRight: '1px solid #e2e8f0', color: '#475569', fontWeight: 700, whiteSpace: 'nowrap', fontSize: '0.65rem' }}>QTY</th>
+                                            <th style={{ padding: '0.5rem 0.4rem', borderRight: '1px solid #e2e8f0', color: '#475569', fontWeight: 700, whiteSpace: 'nowrap', fontSize: '0.65rem' }}>PLANNED DURATION</th>
+                                            <th style={{ padding: '0.5rem 0.4rem', borderRight: '1px solid #e2e8f0', color: '#475569', fontWeight: 700, whiteSpace: 'nowrap', fontSize: '0.65rem' }}>START DATE</th>
+                                            <th style={{ padding: '0.5rem 0.4rem', borderRight: '1px solid #e2e8f0', color: '#475569', fontWeight: 700, whiteSpace: 'nowrap', fontSize: '0.65rem' }}>EXPECTED END DATE</th>
+                                            <th style={{ padding: '0.5rem 0.4rem', borderRight: '1px solid #e2e8f0', color: '#475569', fontWeight: 700, whiteSpace: 'nowrap', fontSize: '0.65rem' }}>ACTUAL END DATE</th>
+                                            <th style={{ padding: '0.5rem 0.4rem', borderRight: '1px solid #e2e8f0', color: '#475569', fontWeight: 700, whiteSpace: 'nowrap', fontSize: '0.65rem' }}>ACTUAL DURATION</th>
+                                            <th style={{ padding: '0.5rem 0.4rem', borderRight: '1px solid #e2e8f0', color: '#475569', fontWeight: 700, whiteSpace: 'nowrap', fontSize: '0.65rem' }}>PROGRESS (EXP VS ACT)</th>
+                                            <th style={{ padding: '0.5rem 0.4rem', borderRight: '1px solid #e2e8f0', color: '#475569', fontWeight: 700, whiteSpace: 'nowrap', fontSize: '0.65rem' }}>VARIANCE %</th>
+                                            <th style={{ padding: '0.5rem 0.4rem', borderRight: '1px solid #e2e8f0', color: '#475569', fontWeight: 700, whiteSpace: 'nowrap', fontSize: '0.65rem' }}>STATUS</th>
+                                            <th style={{ padding: '0.5rem 0.4rem', color: '#475569', fontWeight: 700, whiteSpace: 'nowrap', fontSize: '0.65rem' }}>ACTION / REPORT</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {(!selectedProject.implementation_resources || selectedProject.implementation_resources.length === 0) ? (
                                             <tr>
-                                                <td colSpan="10" style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>
+                                                <td colSpan="12" style={{ padding: '1rem', textAlign: 'center', color: '#94a3b8' }}>
                                                     No implementation resources extracted for this project.
                                                 </td>
                                             </tr>
@@ -1557,18 +1619,21 @@ export default function ManagerDashboard() {
                                                 if (!res.individuals || res.individuals.length === 0) {
                                                     // Render Category Row for Start Tracking
                                                     return [(
-                                                        <tr key={`cat-${resIdx}`} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                                            <td style={{ padding: '0.75rem 1rem', fontWeight: 600, color: '#0f172a' }}>{res['Resource Name']}</td>
-                                                            <td style={{ padding: '0.75rem 1rem', color: '#94a3b8', fontStyle: 'italic' }}>Pending Assign</td>
-                                                            <td style={{ padding: '0.75rem 1rem', color: '#475569' }}>{res.Qty || 0}</td>
-                                                            <td style={{ padding: '0.75rem 1rem', color: '#475569' }}>{res.Months || 0} Mo</td>
-                                                            <td style={{ padding: '0.75rem 1rem', color: '#94a3b8' }}>—</td>
-                                                            <td style={{ padding: '0.75rem 1rem', color: '#94a3b8' }}>—</td>
-                                                            <td style={{ padding: '0.75rem 1rem', color: '#94a3b8' }}>—</td>
-                                                            <td style={{ padding: '0.75rem 1rem' }}>
-                                                                <span style={{ display: 'inline-block', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 800, background: `#94a3b822`, color: '#94a3b8', textTransform: 'uppercase' }}>PENDING</span>
+                                                        <tr key={`cat-${resIdx}`} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                                                            <td style={{ padding: '0.5rem 0.4rem', borderRight: '1px solid #e2e8f0', fontWeight: 600, color: '#0f172a', fontSize: '0.75rem' }}>{res['Resource Name']}</td>
+                                                            <td style={{ padding: '0.5rem 0.4rem', borderRight: '1px solid #e2e8f0', color: '#94a3b8', fontStyle: 'italic', fontSize: '0.7rem' }}>Pending Assign</td>
+                                                            <td style={{ padding: '0.5rem 0.4rem', borderRight: '1px solid #e2e8f0', color: '#475569', fontSize: '0.75rem' }}>{res.Qty || 0}</td>
+                                                            <td style={{ padding: '0.5rem 0.4rem', borderRight: '1px solid #e2e8f0', color: '#475569', fontSize: '0.75rem' }}>{res.Months || 0} Mo</td>
+                                                            <td style={{ padding: '0.5rem 0.4rem', borderRight: '1px solid #e2e8f0', color: '#94a3b8', fontSize: '0.7rem' }}>—</td>
+                                                            <td style={{ padding: '0.5rem 0.4rem', borderRight: '1px solid #e2e8f0', color: '#94a3b8', fontSize: '0.7rem' }}>—</td>
+                                                            <td style={{ padding: '0.5rem 0.4rem', borderRight: '1px solid #e2e8f0', color: '#94a3b8', fontSize: '0.7rem' }}>—</td>
+                                                            <td style={{ padding: '0.5rem 0.4rem', borderRight: '1px solid #e2e8f0', color: '#94a3b8', fontSize: '0.7rem' }}>—</td>
+                                                            <td style={{ padding: '0.5rem 0.4rem', borderRight: '1px solid #e2e8f0', color: '#94a3b8', fontSize: '0.7rem' }}>—</td>
+                                                            <td style={{ padding: '0.5rem 0.4rem', borderRight: '1px solid #e2e8f0', color: '#94a3b8', fontSize: '0.7rem' }}>—</td>
+                                                            <td style={{ padding: '0.5rem 0.4rem', borderRight: '1px solid #e2e8f0' }}>
+                                                                <span style={{ display: 'inline-block', padding: '0.2rem 0.4rem', borderRadius: '4px', fontSize: '0.6rem', fontWeight: 800, background: `#94a3b822`, color: '#94a3b8', textTransform: 'uppercase' }}>PENDING ASSIGNMENT</span>
                                                             </td>
-                                                            <td style={{ padding: '0.75rem 1rem' }}>
+                                                            <td style={{ padding: '0.5rem 0.4rem' }}>
                                                                 <button 
                                                                     onClick={() => {
                                                                         const qty = parseInt(res.Qty) || 1;
@@ -1593,24 +1658,28 @@ export default function ManagerDashboard() {
                                                             const elapsedMonths = elapsedDays / 30.0;
                                                             expectedPct = Math.min(100, (elapsedMonths / (res.Months || 1)) * 100);
                                                         }
-                                                        let dynStatus = 'GREEN';
-                                                        if (ind.actual_pct >= expectedPct) dynStatus = 'GREEN';
-                                                        else if (ind.actual_pct >= (expectedPct - 10)) dynStatus = 'ORANGE';
-                                                        else dynStatus = 'RED';
-                                                        const statusColor = dynStatus === 'RED' ? '#ef4444' : dynStatus === 'ORANGE' ? '#f59e0b' : '#10b981';
+                                                        let dynStatus = 'On Track';
+                                                        if (ind.actual_pct > expectedPct) dynStatus = 'Ahead of Schedule';
+                                                        else if (ind.actual_pct === expectedPct) dynStatus = 'On Track';
+                                                        else if (ind.actual_pct >= (expectedPct - 10)) dynStatus = 'At Risk';
+                                                        else dynStatus = 'Behind Schedule';
+                                                        const statusColor = dynStatus === 'Behind Schedule' ? '#ef4444' : dynStatus === 'At Risk' ? '#f59e0b' : dynStatus === 'Ahead of Schedule' ? '#10b981' : '#3b82f6';
                                                         const dynVar = parseFloat((ind.actual_pct - expectedPct).toFixed(1));
                                                         
                                                         return (
-                                                            <tr key={`ind-${resIdx}-${indIdx}`} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                                                <td style={{ padding: '0.75rem 1rem', fontWeight: 600, color: '#0f172a' }}>{indIdx === 0 ? res['Resource Name'] : ''}</td>
-                                                                <td style={{ padding: '0.75rem 1rem', color: '#0f172a', fontWeight: 700 }}>{ind.name}</td>
-                                                                <td style={{ padding: '0.75rem 1rem', color: '#475569' }}>{indIdx === 0 ? res.Qty : ''}</td>
-                                                                <td style={{ padding: '0.75rem 1rem', color: '#475569' }}>{indIdx === 0 ? (res.Months || 0) + ' Mo' : ''}</td>
-                                                                <td style={{ padding: '0.75rem 1rem', color: '#475569' }}>{indIdx === 0 && res.actual_duration ? res.actual_duration + ' Mo' : '—'}</td>
-                                                                <td style={{ padding: '0.75rem 1rem', minWidth: '150px' }}>
-                                                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', marginBottom: '0.3rem' }}>
-                                                                        <span style={{ color: '#64748b', fontWeight: 600 }}>Exp: {expectedPct.toFixed(1)}%</span>
-                                                                        <span style={{ color: '#0f172a', fontWeight: 800 }}>Act: {ind.actual_pct}%</span>
+                                                            <tr key={`ind-${resIdx}-${indIdx}`} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                                                                <td style={{ padding: '0.5rem 0.4rem', borderRight: '1px solid #e2e8f0', fontWeight: 600, color: '#0f172a', fontSize: '0.75rem' }}>{indIdx === 0 ? res['Resource Name'] : ''}</td>
+                                                                <td style={{ padding: '0.5rem 0.4rem', borderRight: '1px solid #e2e8f0', color: '#0f172a', fontWeight: 700, fontSize: '0.75rem' }}>{ind.name}</td>
+                                                                <td style={{ padding: '0.5rem 0.4rem', borderRight: '1px solid #e2e8f0', color: '#475569', fontSize: '0.75rem' }}>{indIdx === 0 ? res.Qty : ''}</td>
+                                                                <td style={{ padding: '0.5rem 0.4rem', borderRight: '1px solid #e2e8f0', color: '#475569', fontSize: '0.75rem' }}>{indIdx === 0 ? (res.Months || 0) + ' Mo' : ''}</td>
+                                                                <td style={{ padding: '0.5rem 0.4rem', borderRight: '1px solid #e2e8f0', color: '#475569', whiteSpace: 'nowrap', fontSize: '0.7rem' }}>{indIdx === 0 && res.start_date ? res.start_date : '—'}</td>
+                                                                <td style={{ padding: '0.5rem 0.4rem', borderRight: '1px solid #e2e8f0', color: '#475569', whiteSpace: 'nowrap', fontSize: '0.7rem' }}>{indIdx === 0 && expectedEndDateStr !== '—' ? expectedEndDateStr : '—'}</td>
+                                                                <td style={{ padding: '0.5rem 0.4rem', borderRight: '1px solid #e2e8f0', color: '#475569', whiteSpace: 'nowrap', fontSize: '0.7rem' }}>{indIdx === 0 && res.actual_end_date ? res.actual_end_date : '—'}</td>
+                                                                <td style={{ padding: '0.5rem 0.4rem', borderRight: '1px solid #e2e8f0', color: '#475569', fontSize: '0.75rem' }}>{indIdx === 0 && res.actual_duration ? res.actual_duration + ' Mo' : '—'}</td>
+                                                                <td style={{ padding: '0.5rem 0.4rem', borderRight: '1px solid #e2e8f0', minWidth: '120px' }}>
+                                                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', marginBottom: '0.3rem' }}>
+                                                                        <span style={{ color: '#64748b', fontWeight: 600 }}>E: {expectedPct.toFixed(1)}%</span>
+                                                                        <span style={{ color: '#0f172a', fontWeight: 800 }}>A: {ind.actual_pct}%</span>
                                                                     </div>
                                                                     <div style={{ position: 'relative', height: '6px', background: '#e2e8f0', borderRadius: '3px', overflow: 'hidden' }}>
                                                                         {/* Expected Bar */}
@@ -1619,24 +1688,49 @@ export default function ManagerDashboard() {
                                                                         <div style={{ position: 'absolute', top: 0, left: 0, height: '100%', width: `${Math.min(100, ind.actual_pct)}%`, background: statusColor, zIndex: 2 }}></div>
                                                                     </div>
                                                                 </td>
-                                                                <td style={{ padding: '0.75rem 1rem', color: dynVar < 0 ? '#ef4444' : '#10b981', fontWeight: 700 }}>{dynVar > 0 ? '+' : ''}{dynVar}%</td>
-                                                                <td style={{ padding: '0.75rem 1rem' }}>
-                                                                    <span style={{ display: 'inline-block', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 800, background: `${statusColor}22`, color: statusColor, textTransform: 'uppercase' }}>
+                                                                <td style={{ padding: '0.5rem 0.4rem', borderRight: '1px solid #e2e8f0', color: dynVar < 0 ? '#ef4444' : '#10b981', fontWeight: 700, fontSize: '0.75rem' }}>{dynVar > 0 ? '+' : ''}{dynVar}%</td>
+                                                                <td style={{ padding: '0.5rem 0.4rem', borderRight: '1px solid #e2e8f0' }}>
+                                                                    <span style={{ display: 'inline-block', padding: '0.2rem 0.4rem', borderRadius: '4px', fontSize: '0.6rem', fontWeight: 800, background: `${statusColor}22`, color: statusColor, textTransform: 'uppercase' }}>
                                                                         {dynStatus}
                                                                     </span>
                                                                 </td>
-                                                                <td style={{ padding: '0.75rem 1rem' }}>
-                                                                    <button 
-                                                                        onClick={() => {
-                                                                            const lastWeek = ind.progress_log?.length > 0 ? ind.progress_log[ind.progress_log.length - 1].week : 0;
-                                                                            setWeeklyItem({ resIdx, indIdx, res, ind, expectedPct });
-                                                                            setWeeklyForm({ week_number: lastWeek + 1, progress_pct: ind.actual_pct });
-                                                                            setShowWeeklyModal(true);
-                                                                        }}
-                                                                        style={{ background: '#3b82f6', color: '#fff', border: 'none', padding: '0.4rem 0.75rem', borderRadius: '4px', cursor: 'pointer', fontWeight: 600, fontSize: '0.7rem', whiteSpace: 'nowrap' }}
-                                                                    >
-                                                                        Weekly Report
-                                                                    </button>
+                                                                <td style={{ padding: '0.5rem 0.4rem' }}>
+                                                                    {(() => {
+                                                                        let isLocked = false;
+                                                                        if (ind.progress_log?.length > 0) {
+                                                                            const lastLogTime = new Date(ind.progress_log[ind.progress_log.length - 1].timestamp);
+                                                                            const diffDays = (new Date() - lastLogTime) / (1000 * 60 * 60 * 24);
+                                                                            if (diffDays < 7) {
+                                                                                isLocked = true;
+                                                                            }
+                                                                        } else if (res.start_date) {
+                                                                            const startDateTime = new Date(res.start_date);
+                                                                            const diffDaysStart = (new Date() - startDateTime) / (1000 * 60 * 60 * 24);
+                                                                            if (diffDaysStart < 7) {
+                                                                                isLocked = true;
+                                                                            }
+                                                                        }
+                                                                        
+                                                                        // Demo exception: Keep the very first row always unlocked for live demo
+                                                                        if (resIdx === 0 && indIdx === 0) {
+                                                                            isLocked = false;
+                                                                        }
+
+                                                                        return (
+                                                                            <button 
+                                                                                disabled={isLocked}
+                                                                                onClick={() => {
+                                                                                    const lastWeek = ind.progress_log?.length > 0 ? ind.progress_log[ind.progress_log.length - 1].week : 0;
+                                                                                    setWeeklyItem({ resIdx, indIdx, res, ind, expectedPct });
+                                                                                    setWeeklyForm({ week_number: lastWeek + 1, progress_pct: ind.actual_pct });
+                                                                                    setShowWeeklyModal(true);
+                                                                                }}
+                                                                                style={{ background: isLocked ? '#94a3b8' : '#3b82f6', color: '#fff', border: 'none', padding: '0.4rem 0.75rem', borderRadius: '4px', cursor: isLocked ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: '0.7rem', whiteSpace: 'nowrap' }}
+                                                                            >
+                                                                                {isLocked ? 'Next Update in 7 Days' : 'Weekly Report'}
+                                                                            </button>
+                                                                        );
+                                                                    })()}
                                                                 </td>
                                                             </tr>
                                                         );

@@ -57,6 +57,12 @@ export default function CoordinatorDashboard() {
     setTimeout(() => setToast(t => ({ ...t, show: false })), 4000);
   };
   
+  const [vpAlertOpen, setVpAlertOpen] = useState(true);
+  useEffect(() => {
+    const t = setTimeout(() => setVpAlertOpen(false), 5000);
+    return () => clearTimeout(t);
+  }, []);
+  
   // State
   const [managerEmail, setManagerEmail] = useState('');
   const [managerValidated, setManagerValidated] = useState(false);
@@ -112,7 +118,7 @@ export default function CoordinatorDashboard() {
     "Are there any critical governance escalations?",
     "Summarize the total planned vs actual cost across all projects.",
     "Which projects have the largest margin deviation?",
-    "Show me all critical (Red) projects.",
+    "Show me all critical (Behind Schedule) projects.",
     "What is the total implementation cost across the portfolio?"
   ];
 
@@ -736,18 +742,66 @@ export default function CoordinatorDashboard() {
 
         {activeTab === 'OVERVIEW' && (() => {
           const validPortfolio = Array.isArray(portfolio) ? portfolio : [];
+          
+          // Normalizing backend legacy statuses to new governance terminology
+          const normalizedPortfolio = validPortfolio.map(p => {
+              let s = p.status || p.kpis?.health || '';
+              if (s === 'Green' || s === 'GREEN' || s === 'Good' || s === 'GOOD') s = 'Ahead of Schedule';
+              else if (s === 'Orange' || s === 'ORANGE') s = 'At Risk';
+              else if (s === 'Red' || s === 'RED') s = 'Behind Schedule';
+              else if (s === 'Blue' || s === 'BLUE' || s === 'On Track') s = 'On Track';
+              else if (s === 'Pending' || s === 'PENDING' || s === 'Pending Assignment' || !s) s = 'Pending Assignment';
+
+              // Derive Project Health from resource statuses
+              const implRes = p.implementation_resources || p.kpis?.implementation_resources || [];
+              if (implRes.length > 0) {
+                  let behindCount = 0;
+                  let atRiskCount = 0;
+                  
+                  implRes.forEach(res => {
+                      if (res.start_date && res.individuals) {
+                          res.individuals.forEach(ind => {
+                              let expectedPct = 0;
+                              const elapsedDays = (new Date() - new Date(res.start_date)) / (1000 * 60 * 60 * 24);
+                              const elapsedMonths = elapsedDays / 30.0;
+                              expectedPct = Math.min(100, (elapsedMonths / (res.Months || 1)) * 100);
+                              
+                              if (ind.actual_pct < (expectedPct - 10)) behindCount++;
+                              else if (ind.actual_pct >= (expectedPct - 10) && ind.actual_pct < expectedPct) atRiskCount++;
+                          });
+                      }
+                  });
+                  
+                  if (behindCount > 0) {
+                      s = 'Behind Schedule';
+                  } else if (atRiskCount >= 2) {
+                      s = 'At Risk';
+                  } else {
+                      s = 'Ahead of Schedule';
+                  }
+              }
+
+              return { ...p, status: s };
+          });
+
           // Sort newest assigned first
-          const sortedPortfolio = [...validPortfolio].sort((a, b) => new Date(b.assigned_at || 0) - new Date(a.assigned_at || 0));
-          const filteredPortfolio = sortedPortfolio.filter(p => portfolioFilter === 'ALL' || p.status === portfolioFilter);
+          const sortedPortfolio = [...normalizedPortfolio].sort((a, b) => new Date(b.assigned_at || 0) - new Date(a.assigned_at || 0));
+          const filteredPortfolio = sortedPortfolio.filter(p => {
+              if (portfolioFilter === 'ALL') return true;
+              if (portfolioFilter === 'Healthy') return p.status === 'Ahead of Schedule' || p.status === 'On Track';
+              if (portfolioFilter === 'At-Risk') return p.status === 'At Risk';
+              if (portfolioFilter === 'Critical') return p.status === 'Behind Schedule';
+              return p.status === portfolioFilter;
+          });
           
           const ITEMS_PER_PAGE = 10;
           const totalPages = Math.max(1, Math.ceil(filteredPortfolio.length / ITEMS_PER_PAGE));
           const paginatedPortfolio = filteredPortfolio.slice((portfolioPage - 1) * ITEMS_PER_PAGE, portfolioPage * ITEMS_PER_PAGE);
 
-          const totalProjects = validPortfolio.length;
-          const greenCount = validPortfolio.filter(p => p.status === 'Green').length;
-          const orangeCount = validPortfolio.filter(p => p.status === 'Orange').length;
-          const redCount = validPortfolio.filter(p => p.status === 'Red').length;
+          const totalProjects = normalizedPortfolio.length;
+          const greenCount = normalizedPortfolio.filter(p => p.status === 'Ahead of Schedule' || p.status === 'On Track').length;
+          const orangeCount = normalizedPortfolio.filter(p => p.status === 'At Risk').length;
+          const redCount = normalizedPortfolio.filter(p => p.status === 'Behind Schedule').length;
           
           const greenEnd = totalProjects ? (greenCount / totalProjects) * 360 : 0;
           const orangeEnd = greenEnd + (totalProjects ? (orangeCount / totalProjects) * 360 : 0);
@@ -765,7 +819,7 @@ export default function CoordinatorDashboard() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                   {/* Filter Toggles */}
                   <div style={{ display: 'flex', gap: '0.4rem', background: '#f1f5f9', padding: '0.2rem', borderRadius: '8px' }}>
-                    {['ALL', 'Green', 'Orange', 'Red'].map(f => (
+                    {['ALL', 'Healthy', 'At-Risk', 'Critical'].map(f => (
                       <button 
                         key={f} 
                         onClick={() => { setPortfolioFilter(f); setPortfolioPage(1); }}
@@ -782,7 +836,7 @@ export default function CoordinatorDashboard() {
                           transition: 'all 0.2s'
                         }}
                       >
-                        {f === 'ALL' ? 'All Projects' : f === 'Green' ? 'Healthy' : f === 'Orange' ? 'At-Risk' : 'Critical'}
+                        {f === 'ALL' ? 'All Projects' : f}
                       </button>
                     ))}
                   </div>
@@ -851,7 +905,7 @@ export default function CoordinatorDashboard() {
                         onMouseOut={e => e.currentTarget.style.background = selectedVpProject?.id === p.id ? '#eff6ff' : '#fff'}
                       >
                          {/* Status Indicator */}
-                         <div style={{ width: '3px', height: '16px', borderRadius: '1.5px', background: p.status === 'Red' ? '#ef4444' : p.status === 'Orange' ? '#f59e0b' : '#10b981', flexShrink: 0 }}></div>
+                         <div style={{ width: '3px', height: '16px', borderRadius: '1.5px', background: p.status === 'Behind Schedule' ? '#ef4444' : p.status === 'At Risk' ? '#f59e0b' : p.status === 'On Track' ? '#3b82f6' : p.status === 'Ahead of Schedule' ? '#10b981' : '#94a3b8', flexShrink: 0 }}></div>
                          
                          {/* Project Info */}
                          <div style={{ flex: '2', minWidth: '120px', overflow: 'hidden' }}>
@@ -1015,7 +1069,7 @@ export default function CoordinatorDashboard() {
               {/* Header */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: sp.status === 'Red' ? '#ef4444' : sp.status === 'Orange' ? '#f59e0b' : '#10b981', boxShadow: `0 0 8px ${sp.status === 'Red' ? '#ef4444' : sp.status === 'Orange' ? '#f59e0b' : '#10b981'}` }}></div>
+                  <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: sp.status === 'Behind Schedule' ? '#ef4444' : sp.status === 'At Risk' ? '#f59e0b' : sp.status === 'On Track' ? '#3b82f6' : sp.status === 'Ahead of Schedule' ? '#10b981' : '#94a3b8', boxShadow: `0 0 8px ${sp.status === 'Behind Schedule' ? '#ef4444' : sp.status === 'At Risk' ? '#f59e0b' : sp.status === 'On Track' ? '#3b82f6' : sp.status === 'Ahead of Schedule' ? '#10b981' : '#94a3b8'}` }}></div>
                   <div>
                     <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#0f172a' }}>{sp.name}</h2>
                     <div style={{ fontSize: '0.7rem', color: '#64748b' }}>{sp.customer_name} · PM: {sp.manager_name}</div>
@@ -1024,12 +1078,95 @@ export default function CoordinatorDashboard() {
                 <button onClick={() => setSelectedVpProject(null)} style={{ background: '#e2e8f0', border: 'none', padding: '0.4rem 0.9rem', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, fontSize: '0.75rem', color: '#475569' }}>✕ Close</button>
               </div>
 
+              {(() => {
+                  const vpAlerts = [];
+                  implRes.forEach(res => {
+                      if (res.start_date && res.individuals) {
+                          res.individuals.forEach(ind => {
+                              let expectedPct = 0;
+                              const elapsedDays = (new Date() - new Date(res.start_date)) / (1000 * 60 * 60 * 24);
+                              const elapsedMonths = elapsedDays / 30.0;
+                              expectedPct = Math.min(100, (elapsedMonths / (res.Months || 1)) * 100);
+                              
+                              let status = 'On Track';
+                              if (ind.actual_pct > expectedPct) status = 'Ahead of Schedule';
+                              else if (ind.actual_pct === expectedPct) status = 'On Track';
+                              else if (ind.actual_pct >= (expectedPct - 10)) status = 'At Risk';
+                              else status = 'Behind Schedule';
+                              
+                              if (status === 'At Risk' || status === 'Behind Schedule') {
+                                  vpAlerts.push({
+                                      resourceName: res['Resource Name'],
+                                      personName: ind.name,
+                                      projectName: sp.name,
+                                      variance: parseFloat((ind.actual_pct - expectedPct).toFixed(1)),
+                                      triggerDate: new Date().toLocaleDateString(),
+                                      status
+                                  });
+                              }
+                          });
+                      }
+                  });
+
+                  if (vpAlerts.length > 0) {
+                      return (
+                          <motion.div variants={{ hidden: { opacity: 0, y: 15 }, show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } } }} style={{ background: '#fef2f2', border: '1px solid #fecaca', borderLeft: '4px solid #ef4444', borderRadius: '6px', marginBottom: '1rem', overflow: 'hidden' }}>
+                              <div 
+                                  onClick={() => setVpAlertOpen(!vpAlertOpen)}
+                                  style={{ cursor: 'pointer', padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                              >
+                                  <div style={{ color: '#ef4444', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                      <Icons.Bell /> ⚠ Action Required ({vpAlerts.length})
+                                  </div>
+                                  <span style={{ color: '#ef4444', fontSize: '0.7rem', fontWeight: 800 }}>{vpAlertOpen ? 'COLLAPSE ▲' : 'EXPAND ▼'}</span>
+                              </div>
+                              <AnimatePresence>
+                                  {vpAlertOpen && (
+                                      <motion.div 
+                                          initial={{ height: 0, opacity: 0 }} 
+                                          animate={{ height: 'auto', opacity: 1 }} 
+                                          exit={{ height: 0, opacity: 0 }}
+                                          transition={{ duration: 0.3 }}
+                                      >
+                                          <div style={{ padding: '0 1rem 1rem 1rem' }}>
+                                              <table style={{ width: '100%', fontSize: '0.75rem', textAlign: 'left', borderCollapse: 'collapse' }}>
+                                                  <thead>
+                                                      <tr style={{ borderBottom: '1px solid #fca5a5' }}>
+                                                          <th style={{ padding: '0.4rem', color: '#991b1b' }}>Project Name</th>
+                                                          <th style={{ padding: '0.4rem', color: '#991b1b' }}>Resource Name</th>
+                                                          <th style={{ padding: '0.4rem', color: '#991b1b' }}>Person Name</th>
+                                                          <th style={{ padding: '0.4rem', color: '#991b1b' }}>Variance %</th>
+                                                          <th style={{ padding: '0.4rem', color: '#991b1b' }}>Date</th>
+                                                      </tr>
+                                                  </thead>
+                                                  <tbody>
+                                                      {vpAlerts.map((alert, i) => (
+                                                          <tr key={i} style={{ borderBottom: '1px solid #fee2e2' }}>
+                                                              <td style={{ padding: '0.4rem', color: '#7f1d1d', fontWeight: 600 }}>{alert.projectName}</td>
+                                                              <td style={{ padding: '0.4rem', color: '#7f1d1d' }}>{alert.resourceName}</td>
+                                                              <td style={{ padding: '0.4rem', color: '#7f1d1d' }}>{alert.personName}</td>
+                                                              <td style={{ padding: '0.4rem', color: '#ef4444', fontWeight: 800 }}>{alert.variance > 0 ? '+' : ''}{alert.variance}% ({alert.status})</td>
+                                                              <td style={{ padding: '0.4rem', color: '#7f1d1d' }}>{alert.triggerDate}</td>
+                                                          </tr>
+                                                      ))}
+                                                  </tbody>
+                                              </table>
+                                          </div>
+                                      </motion.div>
+                                  )}
+                              </AnimatePresence>
+                          </motion.div>
+                      );
+                  }
+                  return null;
+              })()}
+
               {/* KPI Ribbon */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: '0.75rem', marginBottom: '1rem' }}>
                 {[
-                  { label: 'PROJECT HEALTH', value: sp.status, color: sp.status === 'Red' ? '#ef4444' : sp.status === 'Orange' ? '#f59e0b' : '#10b981' },
+                  { label: 'PROJECT HEALTH', value: sp.status, color: sp.status === 'Behind Schedule' ? '#ef4444' : sp.status === 'At Risk' ? '#f59e0b' : sp.status === 'On Track' ? '#3b82f6' : sp.status === 'Ahead of Schedule' ? '#10b981' : '#94a3b8' },
                   { label: 'TARGET MARGIN', value: `${sp.kpis?.target_margin_pct?.toFixed(1) || 0}%`, color: '#2563eb' },
-                  { label: 'FORECAST MARGIN', value: `${sp.kpis?.forecast_margin_pct?.toFixed(1) || 0}%`, color: sp.status === 'Red' ? '#ef4444' : '#10b981' },
+                  { label: 'FORECAST MARGIN', value: `${sp.kpis?.forecast_margin_pct?.toFixed(1) || 0}%`, color: sp.status === 'Behind Schedule' ? '#ef4444' : '#10b981' },
                   { label: 'TOTAL SELL PRICE', value: `₹${(sp.kpis?.total_revenue || 0).toLocaleString('en-IN')}`, color: '#0f172a' },
                   { label: 'DURATION', value: `${sp.duration || 0} Months`, color: '#0f172a' },
                 ].map(k => (
@@ -1061,8 +1198,8 @@ export default function CoordinatorDashboard() {
                         let expectedEndDateStr = '—';
                         if (sd && r.Months > 0) { const e = new Date(sd); e.setMonth(e.getMonth() + r.Months); expectedEndDateStr = e.toISOString().split('T')[0]; }
                         const util = r.utilization || 0;
-                        const status = !sd ? 'Pending' : (util > 100 ? 'Red' : util > 80 ? 'Orange' : 'Green');
-                        const sc = status === 'Red' ? '#ef4444' : status === 'Orange' ? '#f59e0b' : status === 'Green' ? '#10b981' : '#94a3b8';
+                        const status = !sd ? 'Pending Assignment' : (util > 100 ? 'Behind Schedule' : util > 80 ? 'At Risk' : 'Ahead of Schedule');
+                        const sc = status === 'Behind Schedule' ? '#ef4444' : status === 'At Risk' ? '#f59e0b' : status === 'Ahead of Schedule' ? '#10b981' : '#94a3b8';
                         return (
                           <tr key={idx} style={{ borderTop: '1px solid #f1f5f9' }}>
                             <td style={{ padding: '0.5rem 0.75rem', fontWeight: 600, color: '#0f172a' }}>{r['Resource Name']}</td>
@@ -1168,7 +1305,7 @@ export default function CoordinatorDashboard() {
                 { label: 'ACTION REQUIRED', count: (Array.isArray(requests) ? requests : []).filter(r => r.status === 'PENDING').length, grad: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', shadow: 'rgba(37, 99, 235, 0.3)', icon: <Icons.Bell /> },
                 { label: 'CRITICAL ESCALATIONS', count: (Array.isArray(escalations) ? escalations : []).filter(e => e.status === 'OPEN').length, grad: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)', shadow: 'rgba(239, 68, 68, 0.3)', icon: <Icons.Overview /> },
                 { label: 'RESOLVED REQUESTS', count: (Array.isArray(requests) ? requests : []).filter(r => r.status === 'APPROVED').length, grad: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', shadow: 'rgba(16, 185, 129, 0.3)', icon: <Icons.CheckSquare /> },
-                { label: 'AT-RISK PORTFOLIO', count: (Array.isArray(portfolio) ? portfolio : []).filter(p => p.status === 'Orange' || p.status === 'Red').length, grad: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', shadow: 'rgba(245, 158, 11, 0.3)', icon: <Icons.Cube /> }
+                { label: 'AT-RISK PORTFOLIO', count: (Array.isArray(portfolio) ? portfolio : []).filter(p => p.status === 'At Risk' || p.status === 'Behind Schedule' || p.status === 'Orange' || p.status === 'Red').length, grad: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', shadow: 'rgba(245, 158, 11, 0.3)', icon: <Icons.Cube /> }
               ].map((stat, i) => (
                 <motion.div 
                   key={i}
@@ -1688,18 +1825,18 @@ export default function CoordinatorDashboard() {
                                   <td style={{ padding: '0.75rem 0.5rem', color: '#94a3b8' }}>—</td>
                                   <td style={{ padding: '0.75rem 0.5rem', color: '#94a3b8' }}>—</td>
                                   <td style={{ padding: '0.75rem 0.5rem', color: '#94a3b8' }}>—</td>
-                                  <td style={{ padding: '0.75rem 0.5rem', textAlign: 'center' }}>
-                                    <span style={{ padding: '0.2rem 0.5rem', borderRadius: '4px', fontWeight: 800, fontSize: '0.65rem', background: '#f1f5f9', color: '#94a3b8' }}>PENDING</span>
+                                  <td style={{ padding: '0.75rem 0.5rem', color: '#94a3b8' }}>
+                                    <span style={{ padding: '0.2rem 0.5rem', borderRadius: '4px', fontWeight: 800, fontSize: '0.65rem', background: '#f1f5f9', color: '#94a3b8' }}>PENDING ASSIGNMENT</span>
                                   </td>
                                 </tr>
                               )];
                           } else {
                               return r.individuals.map((ind, indIdx) => {
-                                  let dynStatus = 'GREEN';
-                                  if (ind.actual_pct >= expectedPct) dynStatus = 'GREEN';
-                                  else if (ind.actual_pct >= (expectedPct - 10)) dynStatus = 'ORANGE';
-                                  else dynStatus = 'RED';
-                                  const statusColor = dynStatus === 'RED' ? '#ef4444' : dynStatus === 'ORANGE' ? '#f59e0b' : '#10b981';
+                                  let dynStatus = 'Ahead of Schedule';
+                                  if (ind.actual_pct >= expectedPct) dynStatus = 'Ahead of Schedule';
+                                  else if (ind.actual_pct >= (expectedPct - 10)) dynStatus = 'At Risk';
+                                  else dynStatus = 'Behind Schedule';
+                                  const statusColor = dynStatus === 'Behind Schedule' ? '#ef4444' : dynStatus === 'At Risk' ? '#f59e0b' : '#10b981';
                                   const dynVar = parseFloat((ind.actual_pct - expectedPct).toFixed(1));
                                   return (
                                     <tr key={`ind-${i}-${indIdx}`} style={{ borderBottom: '1px solid #f1f5f9' }}>
